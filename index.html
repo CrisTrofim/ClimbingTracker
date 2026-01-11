@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ClimbTracker Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🧗 Mon Tracker</h1>
+        </header>
+
+        <div class="card">
+            <h3>Ajouter une grimpe</h3>
+            <form id="climbForm">
+                <div class="input-group">
+                    <label>Date</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="input-group">
+                    <label>Niveau (1-16)</label>
+                    <input type="number" id="grade" min="1" max="16" placeholder="Ex: 8" required>
+                </div>
+                <div class="input-group">
+                    <label>Essais</label>
+                    <input type="number" id="tries" placeholder="Ex: 3" required>
+                </div>
+                <div class="input-group">
+                    <label>Photo</label>
+                    <input type="file" id="photo" accept="image/*" capture="environment">
+                </div>
+                <button type="submit" id="submitBtn">Enregistrer</button>
+            </form>
+        </div>
+
+        <div class="card chart-card">
+            <h3>Progression</h3>
+            <div class="filter-buttons">
+                <button onclick="updateCharts('1w')">1S</button>
+                <button onclick="updateCharts('1m')">1M</button>
+                <button onclick="updateCharts('6m')">6M</button>
+                <button onclick="updateCharts('all')" class="active">Tout</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="progressionChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card chart-card">
+            <h3>Répartition</h3>
+            <div class="chart-container">
+                <canvas id="difficultyChart"></canvas>
+            </div>
+        </div>
+
+        <div id="stats" class="card">
+            <h3>Historique</h3>
+            <div id="climbList">Chargement...</div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
