@@ -77,7 +77,7 @@ button:active { transform: scale(0.98); }
 /* Graphiques */
 .chart-container {
     position: relative;
-    height: 250px; /* Hauteur fixe pour éviter les sauts de page */
+    height: 260px; /* Hauteur fixe pour éviter les sauts de page */
     width: 100%;
 }
 

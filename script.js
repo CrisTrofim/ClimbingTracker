@@ -2,11 +2,9 @@ const firebaseURL = "https://climbingtracker-d0c24-default-rtdb.firebaseio.com/c
 let allClimbs = [];
 let progressionChart, difficultyChart;
 
-// Configuration Chart.js globale
 Chart.defaults.font.size = 10;
-Chart.defaults.plugins.legend.display = true;
 
-// --- 1. COMPRESSION DE L'IMAGE ---
+// 1. COMPRESSION IMAGE
 const processImage = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -28,24 +26,35 @@ const processImage = (file) => {
     });
 };
 
-// --- 2. RÉCUPÉRATION DES DONNÉES ---
+// 2. RÉCUPÉRATION ET CALCUL RECORDS
 async function fetchClimbs() {
     try {
         const response = await fetch(firebaseURL);
         const data = await response.json();
         allClimbs = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
         
-        // Tri chronologique pour le graphique
         allClimbs.sort((a, b) => new Date(a.date) - new Date(b.date));
         
+        updateRecords(allClimbs);
         displayClimbs(allClimbs);
         initCharts(allClimbs);
     } catch (error) {
-        console.error("Erreur Firebase:", error);
+        console.error("Fetch error:", error);
     }
 }
 
-// --- 3. INITIALISATION DES GRAPHIQUES ---
+function updateRecords(data) {
+    const normalClimbs = data.filter(d => !d.isComp).map(d => d.grade);
+    const compClimbs = data.filter(d => d.isComp).map(d => d.grade);
+
+    const maxNormal = normalClimbs.length > 0 ? Math.max(...normalClimbs) : "--";
+    const maxComp = compClimbs.length > 0 ? Math.max(...compClimbs) : "--";
+
+    document.getElementById('best-normal').innerText = maxNormal !== "--" ? `Niv. ${maxNormal}` : "--";
+    document.getElementById('best-comp').innerText = maxComp !== "--" ? `Niv. ${maxComp}` : "--";
+}
+
+// 3. GRAPHIQUES SÉPARÉS
 function initCharts(data) {
     const ctxProg = document.getElementById('progressionChart').getContext('2d');
     const ctxDiff = document.getElementById('difficultyChart').getContext('2d');
@@ -53,83 +62,83 @@ function initCharts(data) {
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
-    // Préparation des données séparées
     const labels = data.map(d => d.date.split('-').slice(1).join('/'));
-    const normalData = data.map(d => d.isComp ? null : d.grade);
-    const compData = data.map(d => d.isComp ? d.grade : null);
+    const normalLineData = data.map(d => d.isComp ? null : d.grade);
+    const compLineData = data.map(d => d.isComp ? d.grade : null);
 
-    
-
-    // Graphique de Progression (Deux lignes)
     progressionChart = new Chart(ctxProg, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
                 {
-                    label: 'Entraînement',
-                    data: normalData,
-                    borderColor: '#27ae60', // Vert
-                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    label: 'Non-Compétition',
+                    data: normalLineData,
+                    borderColor: '#27ae60',
                     borderWidth: 3,
                     pointRadius: 4,
                     tension: 0.3,
-                    spanGaps: true,
-                    fill: false
+                    spanGaps: true
                 },
                 {
-                    label: 'Compétition 🏆',
-                    data: compData,
-                    borderColor: '#e74c3c', // Rouge
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    label: 'Compétition',
+                    data: compLineData,
+                    borderColor: '#e74c3c',
                     borderWidth: 3,
                     pointRadius: 6,
                     pointStyle: 'rectRot',
                     tension: 0.3,
-                    spanGaps: true,
-                    fill: false
+                    spanGaps: true
                 }
             ]
         },
         options: {
             maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'top', labels: { boxWidth: 12 } }
-            },
-            scales: { 
-                y: { min: 1, max: 16, ticks: { stepSize: 1 } },
-                x: { grid: { display: false } }
-            }
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { min: 1, max: 16, ticks: { stepSize: 1 } } }
         }
     });
 
-    // Graphique de Répartition
-    const gradesCount = Array(17).fill(0);
-    data.forEach(d => { if(d.grade) gradesCount[d.grade]++ });
+    const normalGradesCount = Array(17).fill(0);
+    const compGradesCount = Array(17).fill(0);
+    data.forEach(d => {
+        if (d.grade) {
+            if (d.isComp) compGradesCount[d.grade]++;
+            else normalGradesCount[d.grade]++;
+        }
+    });
 
     difficultyChart = new Chart(ctxDiff, {
         type: 'bar',
         data: {
             labels: Array.from({length: 16}, (_, i) => i + 1),
-            datasets: [{
-                data: gradesCount.slice(1),
-                backgroundColor: '#3498db',
-                borderRadius: 5
-            }]
+            datasets: [
+                {
+                    label: 'Non-Compétition',
+                    data: normalGradesCount.slice(1),
+                    backgroundColor: '#2ecc71',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Compétition',
+                    data: compGradesCount.slice(1),
+                    backgroundColor: '#e74c3c',
+                    borderRadius: 4
+                }
+            ]
         },
         options: {
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: true, position: 'top' } },
             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
 }
 
-// --- 4. FILTRES TEMPORELS ---
+// 4. FILTRES ET ENVOI
 function updateCharts(range) {
     const now = new Date();
     let filtered = [...allClimbs];
-
     if (range !== 'all') {
         const days = { '1w': 7, '1m': 30, '6m': 180 };
         const cutoff = new Date();
@@ -139,19 +148,14 @@ function updateCharts(range) {
     initCharts(filtered);
 }
 
-// --- 5. ENVOI DU FORMULAIRE ---
 document.getElementById('climbForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerText = "Envoi...";
+    btn.innerText = "⏳...";
 
     const fileInput = document.getElementById('photo');
-    let imageData = "";
-
-    if (fileInput.files && fileInput.files[0]) {
-        imageData = await processImage(fileInput.files[0]);
-    }
+    let imageData = fileInput.files[0] ? await processImage(fileInput.files[0]) : "";
 
     const newClimb = {
         date: document.getElementById('date').value,
@@ -162,35 +166,23 @@ document.getElementById('climbForm').addEventListener('submit', async (e) => {
         photo: imageData
     };
 
-    try {
-        await fetch(firebaseURL, { method: 'POST', body: JSON.stringify(newClimb) });
-        e.target.reset();
-        await fetchClimbs();
-    } catch (error) {
-        alert("Erreur lors de la sauvegarde.");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Enregistrer";
-    }
+    await fetch(firebaseURL, { method: 'POST', body: JSON.stringify(newClimb) });
+    e.target.reset();
+    btn.disabled = false;
+    btn.innerText = "Enregistrer";
+    fetchClimbs();
 });
 
-// --- 6. AFFICHAGE DE L'HISTORIQUE ---
+// 5. AFFICHAGE ET SUPPRESSION
 function displayClimbs(data) {
     const list = document.getElementById('climbList');
     list.innerHTML = "";
-    
-    const colorMap = {
-        "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71",
-        "Bleu": "#3498db", "Rouge": "#e74c3c", "Rose": "#ff9ff3",
-        "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6"
-    };
+    const colorMap = { "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71", "Bleu": "#3498db", "Rouge": "#e74c3c", "Rose": "#ff9ff3", "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6" };
 
     [...data].reverse().forEach(climb => {
         const div = document.createElement('div');
         div.className = `climb-item ${climb.isComp ? 'comp-session' : ''}`;
-        
         const dotColor = colorMap[climb.color] || "#ccc";
-
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
@@ -207,13 +199,11 @@ function displayClimbs(data) {
     });
 }
 
-// --- 7. SUPPRESSION ---
 async function deleteClimb(id) {
-    if (confirm("Supprimer cette entrée ?")) {
+    if (confirm("Supprimer?")) {
         await fetch(`https://climbingtracker-d0c24-default-rtdb.firebaseio.com/climbs/${id}.json`, { method: 'DELETE' });
         fetchClimbs();
     }
 }
 
-// Lancement initial
 fetchClimbs();
