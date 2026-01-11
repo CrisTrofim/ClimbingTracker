@@ -2,10 +2,11 @@ const firebaseURL = "https://climbingtracker-d0c24-default-rtdb.firebaseio.com/c
 let allClimbs = [];
 let progressionChart, difficultyChart;
 
+// Configuration Chart.js globale
 Chart.defaults.font.size = 10;
-Chart.defaults.plugins.legend.display = false;
+Chart.defaults.plugins.legend.display = true;
 
-// 1. COMPRESSION IMAGE
+// --- 1. COMPRESSION DE L'IMAGE ---
 const processImage = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -27,21 +28,24 @@ const processImage = (file) => {
     });
 };
 
-// 2. RÉCUPÉRATION
+// --- 2. RÉCUPÉRATION DES DONNÉES ---
 async function fetchClimbs() {
     try {
         const response = await fetch(firebaseURL);
         const data = await response.json();
         allClimbs = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
+        
+        // Tri chronologique pour le graphique
         allClimbs.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
         displayClimbs(allClimbs);
         initCharts(allClimbs);
     } catch (error) {
-        console.error("Fetch error:", error);
+        console.error("Erreur Firebase:", error);
     }
 }
 
-// 3. GRAPHIQUES
+// --- 3. INITIALISATION DES GRAPHIQUES ---
 function initCharts(data) {
     const ctxProg = document.getElementById('progressionChart').getContext('2d');
     const ctxDiff = document.getElementById('difficultyChart').getContext('2d');
@@ -49,31 +53,57 @@ function initCharts(data) {
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
-    // Graphique Progression (Points rouges si Compétition)
+    // Préparation des données séparées
+    const labels = data.map(d => d.date.split('-').slice(1).join('/'));
+    const normalData = data.map(d => d.isComp ? null : d.grade);
+    const compData = data.map(d => d.isComp ? d.grade : null);
+
+    
+
+    // Graphique de Progression (Deux lignes)
     progressionChart = new Chart(ctxProg, {
         type: 'line',
         data: {
-            labels: data.map(d => d.date.split('-').slice(1).join('/')),
-            datasets: [{
-                data: data.map(d => d.grade),
-                borderColor: '#27ae60',
-                borderWidth: 3,
-                tension: 0.3,
-                fill: true,
-                backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                // Style dynamique des points
-                pointBackgroundColor: data.map(d => d.isComp ? '#e74c3c' : '#27ae60'),
-                pointRadius: data.map(d => d.isComp ? 6 : 4),
-                pointBorderColor: data.map(d => d.isComp ? '#fff' : '#27ae60')
-            }]
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Entraînement',
+                    data: normalData,
+                    borderColor: '#27ae60', // Vert
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    tension: 0.3,
+                    spanGaps: true,
+                    fill: false
+                },
+                {
+                    label: 'Compétition 🏆',
+                    data: compData,
+                    borderColor: '#e74c3c', // Rouge
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    pointStyle: 'rectRot',
+                    tension: 0.3,
+                    spanGaps: true,
+                    fill: false
+                }
+            ]
         },
         options: {
             maintainAspectRatio: false,
-            scales: { y: { min: 1, max: 16, grid: { display: false }, ticks: { stepSize: 1 } } }
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12 } }
+            },
+            scales: { 
+                y: { min: 1, max: 16, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
         }
     });
 
-    // Graphique Répartition
+    // Graphique de Répartition
     const gradesCount = Array(17).fill(0);
     data.forEach(d => { if(d.grade) gradesCount[d.grade]++ });
 
@@ -89,15 +119,17 @@ function initCharts(data) {
         },
         options: {
             maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
 }
 
-// 4. FILTRES
+// --- 4. FILTRES TEMPORELS ---
 function updateCharts(range) {
     const now = new Date();
     let filtered = [...allClimbs];
+
     if (range !== 'all') {
         const days = { '1w': 7, '1m': 30, '6m': 180 };
         const cutoff = new Date();
@@ -107,33 +139,42 @@ function updateCharts(range) {
     initCharts(filtered);
 }
 
-// 5. ENVOI
+// --- 5. ENVOI DU FORMULAIRE ---
 document.getElementById('climbForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerText = "⏳...";
+    btn.innerText = "Envoi...";
 
     const fileInput = document.getElementById('photo');
-    let imageData = fileInput.files[0] ? await processImage(fileInput.files[0]) : "";
+    let imageData = "";
+
+    if (fileInput.files && fileInput.files[0]) {
+        imageData = await processImage(fileInput.files[0]);
+    }
 
     const newClimb = {
         date: document.getElementById('date').value,
         grade: parseInt(document.getElementById('grade').value),
-        color: document.getElementById('color').value, // Sauvegarde la couleur
+        color: document.getElementById('color').value,
         tries: parseInt(document.getElementById('tries').value),
-        isComp: document.getElementById('isComp').checked, // Sauvegarde le mode compé
+        isComp: document.getElementById('isComp').checked,
         photo: imageData
     };
 
-    await fetch(firebaseURL, { method: 'POST', body: JSON.stringify(newClimb) });
-    e.target.reset();
-    btn.disabled = false;
-    btn.innerText = "Enregistrer";
-    fetchClimbs();
+    try {
+        await fetch(firebaseURL, { method: 'POST', body: JSON.stringify(newClimb) });
+        e.target.reset();
+        await fetchClimbs();
+    } catch (error) {
+        alert("Erreur lors de la sauvegarde.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Enregistrer";
+    }
 });
 
-// 6. AFFICHAGE HISTORIQUE
+// --- 6. AFFICHAGE DE L'HISTORIQUE ---
 function displayClimbs(data) {
     const list = document.getElementById('climbList');
     list.innerHTML = "";
@@ -158,7 +199,7 @@ function displayClimbs(data) {
                     <span class="color-dot" style="background-color: ${dotColor}"></span>
                     <b>Niveau ${climb.grade}</b> <small>(${climb.tries} essais)</small>
                 </div>
-                <button onclick="deleteClimb('${climb.id}')" style="background:#ff4757; color:white; border:none; padding:5px 10px; border-radius:8px; font-size: 12px;">Supprimer</button>
+                <button onclick="deleteClimb('${climb.id}')" style="background:#ff4757; color:white; border:none; padding:5px 10px; border-radius:8px; font-size:12px;">Supprimer</button>
             </div>
             ${climb.photo ? `<img src="${climb.photo}" style="width:100%; border-radius:12px; margin-top:10px;">` : ''}
         `;
@@ -166,13 +207,13 @@ function displayClimbs(data) {
     });
 }
 
+// --- 7. SUPPRESSION ---
 async function deleteClimb(id) {
-    if (confirm("Supprimer?")) {
-        await fetch(`https://climbingtracker-d0c24-default-rtdb.firebaseio.com/climbs/${id}.json`.replace('.json', `/${id}.json`), { method: 'DELETE' });
-        // Note: Correction de l'URL de suppression si nécessaire selon ta structure
+    if (confirm("Supprimer cette entrée ?")) {
         await fetch(`https://climbingtracker-d0c24-default-rtdb.firebaseio.com/climbs/${id}.json`, { method: 'DELETE' });
         fetchClimbs();
     }
 }
 
+// Lancement initial
 fetchClimbs();
