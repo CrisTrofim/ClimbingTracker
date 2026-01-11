@@ -6,13 +6,37 @@ let progressionChart, difficultyChart;
 Chart.defaults.font.size = 10;
 Chart.defaults.plugins.legend.display = false;
 
+// --- 1. FONCTION DE COMPRESSION IMAGE ---
+const processImage = (file) => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 600; 
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                // Compresse à 70% pour économiser l'espace Firebase
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+        };
+    });
+};
+
+// --- 2. RÉCUPÉRATION DES DONNÉES ---
 async function fetchClimbs() {
     try {
         const response = await fetch(firebaseURL);
         const data = await response.json();
         allClimbs = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
         
-        // Trier par date
+        // Trier par date pour les graphiques
         allClimbs.sort((a, b) => new Date(a.date) - new Date(b.date));
         
         displayClimbs(allClimbs);
@@ -22,6 +46,7 @@ async function fetchClimbs() {
     }
 }
 
+// --- 3. INITIALISATION DES GRAPHIQUES ---
 function initCharts(data) {
     const ctxProg = document.getElementById('progressionChart').getContext('2d');
     const ctxDiff = document.getElementById('difficultyChart').getContext('2d');
@@ -29,11 +54,11 @@ function initCharts(data) {
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
-    // 1. Graphique Progression
+    // Graphique Progression
     progressionChart = new Chart(ctxProg, {
         type: 'line',
         data: {
-            labels: data.map(d => d.date.split('-').slice(1).join('/')), // Format MM/DD
+            labels: data.map(d => d.date.split('-').slice(1).join('/')),
             datasets: [{
                 data: data.map(d => d.grade),
                 borderColor: '#27ae60',
@@ -46,11 +71,11 @@ function initCharts(data) {
         },
         options: {
             maintainAspectRatio: false,
-            scales: { y: { min: 1, max: 16, grid: { display: false } } }
+            scales: { y: { min: 1, max: 16, grid: { display: false }, ticks: { stepSize: 1 } } }
         }
     });
 
-    // 2. Graphique Répartition (Volumes par grade)
+    // Graphique Répartition
     const gradesCount = Array(17).fill(0);
     data.forEach(d => { if(d.grade) gradesCount[d.grade]++ });
 
@@ -71,20 +96,21 @@ function initCharts(data) {
     });
 }
 
+// --- 4. FILTRES TEMPORELS ---
 function updateCharts(range) {
     const now = new Date();
     let filtered = [...allClimbs];
 
     if (range !== 'all') {
         const days = { '1w': 7, '1m': 30, '6m': 180 };
-        const cutoff = new Date().setDate(now.getDate() - days[range]);
+        const cutoff = new Date();
+        cutoff.setDate(now.getDate() - days[range]);
         filtered = allClimbs.filter(d => new Date(d.date) >= cutoff);
     }
     initCharts(filtered);
 }
 
-// ... (Garder processImage du message précédent) ...
-
+// --- 5. ENVOI DU FORMULAIRE ---
 document.getElementById('climbForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
@@ -92,7 +118,12 @@ document.getElementById('climbForm').addEventListener('submit', async (e) => {
     btn.innerText = "⏳...";
 
     const fileInput = document.getElementById('photo');
-    let imageData = fileInput.files[0] ? await processImage(fileInput.files[0]) : "";
+    let imageData = "";
+
+    // Correction : on utilise la fonction processImage ici
+    if (fileInput.files && fileInput.files[0]) {
+        imageData = await processImage(fileInput.files[0]);
+    }
 
     const newClimb = {
         date: document.getElementById('date').value,
@@ -101,13 +132,19 @@ document.getElementById('climbForm').addEventListener('submit', async (e) => {
         photo: imageData
     };
 
-    await fetch(firebaseURL, { method: 'POST', body: JSON.stringify(newClimb) });
-    e.target.reset();
-    btn.disabled = false;
-    btn.innerText = "Enregistrer";
-    fetchClimbs();
+    try {
+        await fetch(firebaseURL, { method: 'POST', body: JSON.stringify(newClimb) });
+        e.target.reset();
+        await fetchClimbs();
+    } catch (error) {
+        alert("Erreur de sauvegarde");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Enregistrer";
+    }
 });
 
+// --- 6. SUPPRESSION ET AFFICHAGE ---
 async function deleteClimb(id) {
     if (confirm("Supprimer?")) {
         await fetch(`https://climbingtracker-d0c24-default-rtdb.firebaseio.com/climbs/${id}.json`, { method: 'DELETE' });
@@ -127,9 +164,9 @@ function displayClimbs(data) {
                     <span style="color:#888; font-size:12px;">${climb.date}</span><br>
                     <b>Niveau ${climb.grade}</b> <small>(${climb.tries} essais)</small>
                 </div>
-                <button onclick="deleteClimb('${climb.id}')" style="background:#ff4757; padding:5px 10px; font-size:12px;">Supprimer</button>
+                <button onclick="deleteClimb('${climb.id}')" style="background:#ff4757; color:white; border:none; padding:5px 10px; font-size:12px; border-radius:6px;">Supprimer</button>
             </div>
-            ${climb.photo ? `<img src="${climb.photo}">` : ''}
+            ${climb.photo ? `<img src="${climb.photo}" style="width:100%; border-radius:12px; margin-top:10px;">` : ''}
         `;
         list.appendChild(div);
     });
