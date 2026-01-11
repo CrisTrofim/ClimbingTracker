@@ -23,8 +23,22 @@
                     <input type="date" id="date" required>
                 </div>
                 <div class="input-group">
-                    <label>Niveau (1-16)</label>
-                    <input type="number" id="grade" min="1" max="16" placeholder="Ex: 8" required>
+                    <label>Niveau (1-16) & Couleur</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="grade" min="1" max="16" placeholder="Niv" style="flex: 1;" required>
+                        <select id="color"
+                            style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ddd; background: #f9f9f9;">
+                            <option value="Jaune">Jaune</option>
+                            <option value="Orange">Orange</option>
+                            <option value="Vert">Vert</option>
+                            <option value="Bleu">Bleu</option>
+                            <option value="Rouge">Rouge</option>
+                            <option value="Rose">Rose</option>
+                            <option value="Noir">Noir</option>
+                            <option value="Blanc">Blanc</option>
+                            <option value="Mauve">Mauve</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>Essais</label>
@@ -33,6 +47,10 @@
                 <div class="input-group">
                     <label>Photo</label>
                     <input type="file" id="photo" accept="image/*">
+                </div>
+                <div class="toggle-container">
+                    <input type="checkbox" id="isComp">
+                    <label for="isComp" style="font-weight: bold; cursor: pointer;">🏆 Mode Compétition</label>
                 </div>
                 <button type="submit" id="submitBtn">Enregistrer</button>
             </form>

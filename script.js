@@ -2,11 +2,10 @@ const firebaseURL = "https://climbingtracker-d0c24-default-rtdb.firebaseio.com/c
 let allClimbs = [];
 let progressionChart, difficultyChart;
 
-// Configuration Chart.js globale pour Mobile
 Chart.defaults.font.size = 10;
 Chart.defaults.plugins.legend.display = false;
 
-// --- 1. FONCTION DE COMPRESSION IMAGE ---
+// 1. COMPRESSION IMAGE
 const processImage = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -22,23 +21,19 @@ const processImage = (file) => {
                 canvas.height = img.height * scaleSize;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                // Compresse à 70% pour économiser l'espace Firebase
                 resolve(canvas.toDataURL('image/jpeg', 0.7));
             };
         };
     });
 };
 
-// --- 2. RÉCUPÉRATION DES DONNÉES ---
+// 2. RÉCUPÉRATION
 async function fetchClimbs() {
     try {
         const response = await fetch(firebaseURL);
         const data = await response.json();
         allClimbs = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
-        
-        // Trier par date pour les graphiques
         allClimbs.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
         displayClimbs(allClimbs);
         initCharts(allClimbs);
     } catch (error) {
@@ -46,7 +41,7 @@ async function fetchClimbs() {
     }
 }
 
-// --- 3. INITIALISATION DES GRAPHIQUES ---
+// 3. GRAPHIQUES
 function initCharts(data) {
     const ctxProg = document.getElementById('progressionChart').getContext('2d');
     const ctxDiff = document.getElementById('difficultyChart').getContext('2d');
@@ -54,7 +49,7 @@ function initCharts(data) {
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
-    // Graphique Progression
+    // Graphique Progression (Points rouges si Compétition)
     progressionChart = new Chart(ctxProg, {
         type: 'line',
         data: {
@@ -63,10 +58,13 @@ function initCharts(data) {
                 data: data.map(d => d.grade),
                 borderColor: '#27ae60',
                 borderWidth: 3,
-                pointRadius: 4,
                 tension: 0.3,
                 fill: true,
-                backgroundColor: 'rgba(39, 174, 96, 0.1)'
+                backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                // Style dynamique des points
+                pointBackgroundColor: data.map(d => d.isComp ? '#e74c3c' : '#27ae60'),
+                pointRadius: data.map(d => d.isComp ? 6 : 4),
+                pointBorderColor: data.map(d => d.isComp ? '#fff' : '#27ae60')
             }]
         },
         options: {
@@ -96,11 +94,10 @@ function initCharts(data) {
     });
 }
 
-// --- 4. FILTRES TEMPORELS ---
+// 4. FILTRES
 function updateCharts(range) {
     const now = new Date();
     let filtered = [...allClimbs];
-
     if (range !== 'all') {
         const days = { '1w': 7, '1m': 30, '6m': 180 };
         const cutoff = new Date();
@@ -110,7 +107,7 @@ function updateCharts(range) {
     initCharts(filtered);
 }
 
-// --- 5. ENVOI DU FORMULAIRE ---
+// 5. ENVOI
 document.getElementById('climbForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
@@ -118,58 +115,64 @@ document.getElementById('climbForm').addEventListener('submit', async (e) => {
     btn.innerText = "⏳...";
 
     const fileInput = document.getElementById('photo');
-    let imageData = "";
-
-    // Correction : on utilise la fonction processImage ici
-    if (fileInput.files && fileInput.files[0]) {
-        imageData = await processImage(fileInput.files[0]);
-    }
+    let imageData = fileInput.files[0] ? await processImage(fileInput.files[0]) : "";
 
     const newClimb = {
         date: document.getElementById('date').value,
         grade: parseInt(document.getElementById('grade').value),
+        color: document.getElementById('color').value, // Sauvegarde la couleur
         tries: parseInt(document.getElementById('tries').value),
+        isComp: document.getElementById('isComp').checked, // Sauvegarde le mode compé
         photo: imageData
     };
 
-    try {
-        await fetch(firebaseURL, { method: 'POST', body: JSON.stringify(newClimb) });
-        e.target.reset();
-        await fetchClimbs();
-    } catch (error) {
-        alert("Erreur de sauvegarde");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Enregistrer";
-    }
+    await fetch(firebaseURL, { method: 'POST', body: JSON.stringify(newClimb) });
+    e.target.reset();
+    btn.disabled = false;
+    btn.innerText = "Enregistrer";
+    fetchClimbs();
 });
 
-// --- 6. SUPPRESSION ET AFFICHAGE ---
-async function deleteClimb(id) {
-    if (confirm("Supprimer?")) {
-        await fetch(`https://climbingtracker-d0c24-default-rtdb.firebaseio.com/climbs/${id}.json`, { method: 'DELETE' });
-        fetchClimbs();
-    }
-}
-
+// 6. AFFICHAGE HISTORIQUE
 function displayClimbs(data) {
     const list = document.getElementById('climbList');
     list.innerHTML = "";
+    
+    const colorMap = {
+        "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71",
+        "Bleu": "#3498db", "Rouge": "#e74c3c", "Rose": "#ff9ff3",
+        "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6"
+    };
+
     [...data].reverse().forEach(climb => {
         const div = document.createElement('div');
-        div.className = 'climb-item';
+        div.className = `climb-item ${climb.isComp ? 'comp-session' : ''}`;
+        
+        const dotColor = colorMap[climb.color] || "#ccc";
+
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <span style="color:#888; font-size:12px;">${climb.date}</span><br>
+                    <span style="color:#888; font-size:11px;">${climb.date}</span>
+                    ${climb.isComp ? '<span class="badge-comp">COMPÉ</span>' : ''}<br>
+                    <span class="color-dot" style="background-color: ${dotColor}"></span>
                     <b>Niveau ${climb.grade}</b> <small>(${climb.tries} essais)</small>
                 </div>
-                <button onclick="deleteClimb('${climb.id}')" style="background:#ff4757; color:white; border:none; padding:5px 10px; font-size:12px; border-radius:6px;">Supprimer</button>
+                <button onclick="deleteClimb('${climb.id}')" style="background:#ff4757; color:white; border:none; padding:5px 10px; border-radius:8px; font-size: 12px;">Supprimer</button>
             </div>
             ${climb.photo ? `<img src="${climb.photo}" style="width:100%; border-radius:12px; margin-top:10px;">` : ''}
         `;
         list.appendChild(div);
     });
+}
+
+async function deleteClimb(id) {
+    if (confirm("Supprimer?")) {
+        await fetch(`https://climbingtracker-d0c24-default-rtdb.firebaseio.com/climbs/${id}.json`.replace('.json', `/${id}.json`), { method: 'DELETE' });
+        // Note: Correction de l'URL de suppression si nécessaire selon ta structure
+        await fetch(`https://climbingtracker-d0c24-default-rtdb.firebaseio.com/climbs/${id}.json`, { method: 'DELETE' });
+        fetchClimbs();
+    }
 }
 
 fetchClimbs();
