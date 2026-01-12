@@ -23,89 +23,97 @@
     </div>
 
     <div id="app-content" class="container" style="display: none;">
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-            <h1> Mon Tracker</h1>
+        <header
+            style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 20px;">
+            <h1>🧗 Mon Tracker</h1>
             <button id="logoutBtn"
                 style="padding: 8px 12px; background: #95a5a6; font-size: 12px; width: auto;">Déconnexion</button>
         </header>
 
-        <div class="card">
-            <h3>Ajouter une grimpe</h3>
-            <form id="climbForm">
-                <div class="input-group">
-                    <label>Date</label>
-                    <input type="date" id="date" required>
-                </div>
-                <div class="input-group">
-                    <label>Niveau (1-16) & Couleur</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="number" id="grade" min="1" max="16" placeholder="Niv" style="flex: 1;" required>
-                        <select id="color"
-                            style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ddd; background: #f9f9f9;">
-                            <option value="Jaune">Jaune</option>
-                            <option value="Orange">Orange</option>
-                            <option value="Vert">Vert</option>
-                            <option value="Bleu">Bleu</option>
-                            <option value="Rouge">Rouge</option>
-                            <option value="Rose">Rose</option>
-                            <option value="Noir">Noir</option>
-                            <option value="Blanc">Blanc</option>
-                            <option value="Mauve">Mauve</option>
-                        </select>
+        <div class="grid-layout">
+            <div class="left-col">
+                <div class="card" id="records-card"
+                    style="display: flex; justify-content: space-around; text-align: center; background: #1a1a1a; color: white;">
+                    <div>
+                        <p style="margin: 0; font-size: 0.7rem; color: #888;">Record Normal</p>
+                        <h2 id="best-normal" style="margin: 5px 0; color: #27ae60; font-size: 1.2rem;">--</h2>
+                    </div>
+                    <div style="width: 1px; background: #444; margin: 0 5px;"></div>
+                    <div>
+                        <p style="margin: 0; font-size: 0.7rem; color: #888;">Record Compé</p>
+                        <h2 id="best-comp" style="margin: 5px 0; color: #e74c3c; font-size: 1.2rem;">--</h2>
                     </div>
                 </div>
-                <div class="input-group">
-                    <label>Essais</label>
-                    <input type="number" id="tries" placeholder="Ex: 3" required>
+
+                <div class="card">
+                    <h3>Ajouter une grimpe</h3>
+                    <form id="climbForm">
+                        <div class="input-group">
+                            <label>Date</label>
+                            <input type="date" id="date" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Niveau (1-16) & Couleur</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="number" id="grade" min="1" max="16" placeholder="Niv" style="flex: 1;"
+                                    required>
+                                <select id="color"
+                                    style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ddd; background: #f9f9f9;">
+                                    <option value="Jaune">Jaune</option>
+                                    <option value="Orange">Orange</option>
+                                    <option value="Vert">Vert</option>
+                                    <option value="Bleu">Bleu</option>
+                                    <option value="Rouge">Rouge</option>
+                                    <option value="Rose">Rose</option>
+                                    <option value="Noir">Noir</option>
+                                    <option value="Blanc">Blanc</option>
+                                    <option value="Mauve">Mauve</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Essais</label>
+                            <input type="number" id="tries" placeholder="Ex: 3" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Photo</label>
+                            <input type="file" id="photo" accept="image/*">
+                        </div>
+                        <div class="toggle-container">
+                            <input type="checkbox" id="isComp">
+                            <label for="isComp" style="font-weight: bold; cursor: pointer;">🏆 Mode Compétition</label>
+                        </div>
+                        <button type="submit" id="submitBtn" style="width: 100%;">Enregistrer</button>
+                    </form>
                 </div>
-                <div class="input-group">
-                    <label>Photo</label>
-                    <input type="file" id="photo" accept="image/*">
+            </div>
+
+            <div class="right-col">
+                <div class="card chart-card">
+                    <h3>Progression</h3>
+                    <div class="filter-buttons">
+                        <button onclick="updateCharts('1w')">1S</button>
+                        <button onclick="updateCharts('1m')">1M</button>
+                        <button onclick="updateCharts('6m')">6M</button>
+                        <button onclick="updateCharts('all')" class="active">Tout</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="progressionChart"></canvas>
+                    </div>
                 </div>
-                <div class="toggle-container">
-                    <input type="checkbox" id="isComp">
-                    <label for="isComp" style="font-weight: bold; cursor: pointer;">🏆 Mode Compétition</label>
+
+                <div class="card chart-card">
+                    <h3>Répartition par style</h3>
+                    <div class="chart-container">
+                        <canvas id="difficultyChart"></canvas>
+                    </div>
                 </div>
-                <button type="submit" id="submitBtn">Enregistrer</button>
-            </form>
-        </div>
 
-        <div class="card" id="records-card"
-            style="display: flex; justify-content: space-around; text-align: center; background: #1a1a1a; color: white;">
-            <div>
-                <p style="margin: 0; font-size: 0.8rem; color: #888;">Record Non-Compétition</p>
-                <h2 id="best-normal" style="margin: 5px 0; color: #27ae60;">--</h2>
+                <div id="stats" class="card">
+                    <h3>Historique Personnel</h3>
+                    <div id="climbList">Chargement...</div>
+                </div>
             </div>
-            <div style="width: 1px; background: #444; margin: 0 10px;"></div>
-            <div>
-                <p style="margin: 0; font-size: 0.8rem; color: #888;">Record Compétition</p>
-                <h2 id="best-comp" style="margin: 5px 0; color: #e74c3c;">--</h2>
-            </div>
-        </div>
-
-        <div class="card chart-card">
-            <h3>Progression</h3>
-            <div class="filter-buttons">
-                <button onclick="updateCharts('1w')">1S</button>
-                <button onclick="updateCharts('1m')">1M</button>
-                <button onclick="updateCharts('6m')">6M</button>
-                <button onclick="updateCharts('all')" class="active">Tout</button>
-            </div>
-            <div class="chart-container">
-                <canvas id="progressionChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card chart-card">
-            <h3>Répartition par style</h3>
-            <div class="chart-container">
-                <canvas id="difficultyChart"></canvas>
-            </div>
-        </div>
-
-        <div id="stats" class="card">
-            <h3>Historique Personnel</h3>
-            <div id="climbList">Chargement...</div>
         </div>
     </div>
     <script src="script.js"></script>

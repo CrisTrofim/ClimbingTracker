@@ -127,3 +127,49 @@ button:active { transform: scale(0.98); }
     border: 1px solid #ccc;
     vertical-align: middle;
 }
+
+/* --- RESPONSIVE DASHBOARD --- */
+
+/* Par défaut (Mobile) : Colonne unique */
+.container {
+    width: 100%;
+    max-width: 1200px; /* On augmente la limite max pour PC */
+    margin: 0 auto;
+}
+
+.grid-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Version Ordinateur (Écran > 800px) */
+@media (min-width: 800px) {
+    .grid-layout {
+        display: grid;
+        grid-template-columns: 350px 1fr; /* Gauche fixe, Droite flexible */
+        gap: 25px;
+        align-items: start;
+    }
+
+    .left-col {
+        position: sticky;
+        top: 20px; /* Le formulaire reste fixe quand on scrolle la liste */
+    }
+
+    .right-col {
+        display: grid;
+        grid-template-columns: 1fr; /* On peut même mettre les graphiques côte à côte si on veut */
+        gap: 15px;
+    }
+}
+
+/* Optimisation des graphiques sur PC */
+@media (min-width: 1200px) {
+    .right-col {
+        grid-template-columns: 1fr 1fr; /* Graphiques côte à côte sur très grand écran */
+    }
+    #stats {
+        grid-column: span 2; /* L'historique reprend toute la largeur en dessous */
+    }
+}
