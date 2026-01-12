@@ -7,12 +7,26 @@
     <title>ClimbTracker Pro</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>🧗 Mon Tracker</h1>
+    <div id="auth-screen"
+        style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px;">
+        <h1 style="font-size: 3rem;">🧗</h1>
+        <h2>ClimbTracker Pro</h2>
+        <p style="color: #666; margin-bottom: 20px;">Sécurisez vos données et suivez votre progression à Rose Bloc.</p>
+        <button id="loginBtn" style="background: #4285F4; width: 100%; max-width: 300px;">Se connecter avec
+            Google</button>
+    </div>
+
+    <div id="app-content" class="container" style="display: none;">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+            <h1> Mon Tracker</h1>
+            <button id="logoutBtn"
+                style="padding: 8px 12px; background: #95a5a6; font-size: 12px; width: auto;">Déconnexion</button>
         </header>
 
         <div class="card">
@@ -83,14 +97,14 @@
         </div>
 
         <div class="card chart-card">
-            <h3>Répartition</h3>
+            <h3>Répartition par style</h3>
             <div class="chart-container">
                 <canvas id="difficultyChart"></canvas>
             </div>
         </div>
 
         <div id="stats" class="card">
-            <h3>Historique</h3>
+            <h3>Historique Personnel</h3>
             <div id="climbList">Chargement...</div>
         </div>
     </div>
