@@ -1,4 +1,3 @@
-// CONFIGURATION FIREBASE (REMPLACE PAR TES INFOS)
 const firebaseConfig = {
   apiKey: "AIzaSyAhPqDCcq42FzYnkyGvzJTFX1U3cYqHYE8",
   authDomain: "climbingtracker-d0c24.firebaseapp.com",
@@ -9,7 +8,6 @@ const firebaseConfig = {
   appId: "1:490789229720:web:9a97027005173d05066ced"
 };
 
-// Initialisation
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -18,14 +16,26 @@ let currentUser = null;
 let allClimbs = [];
 let progressionChart, difficultyChart;
 
-Chart.defaults.font.size = 10;
+// Table de conversion simplifiée pour les graphiques (Score de 1 à 17)
+const gradeMap = {
+    "vscale": { "V0": 1, "V1": 2, "V2": 3, "V3": 4, "V4": 5, "V5": 6, "V6": 7, "V7": 8, "V8": 9, "V9": 10 },
+    "french": { "4": 1, "5": 2, "6a": 4, "6b": 5, "6c": 7, "7a": 9, "7b": 11, "7c": 13, "8a": 15 }
+};
 
-// --- A. AUTHENTIFICATION ---
+function convertToNumeric(grade, system) {
+    if (system === "rosebloc") return parseInt(grade) || 0;
+    if (system === "vscale") return gradeMap.vscale[grade] || parseInt(grade.replace("V","")) || 0;
+    if (system === "french") return gradeMap.french[grade.substring(0,2)] || 0;
+    return parseInt(grade) || 0;
+}
+
+// --- AUTH ---
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('app-content').style.display = 'block';
+        if (typeof google !== 'undefined') initAutocomplete();
         fetchClimbs();
     } else {
         currentUser = null;
@@ -36,30 +46,27 @@ auth.onAuthStateChanged(user => {
 
 document.getElementById('loginBtn').onclick = () => {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(err => alert(err.message));
+    auth.signInWithPopup(provider);
 };
-
 document.getElementById('logoutBtn').onclick = () => auth.signOut();
 
-// --- B. GESTION DES DONNÉES ---
-async function fetchClimbs() {
-    if (!currentUser) return;
-    const ref = db.ref(`users_climbs/${currentUser.uid}`);
-    ref.on('value', snapshot => {
-        const data = snapshot.val();
-        
-        // Si aucune donnée, on vide la liste et on arrête le chargement
-        if (!data) {
-            allClimbs = [];
-            document.getElementById('climbList').innerHTML = "Aucune grimpe pour le moment. Commencez à grimper !";
-            updateRecords([]);
-            initCharts([]);
-            return;
-        }
+function initAutocomplete() {
+    const input = document.getElementById('location');
+    new google.maps.places.Autocomplete(input);
+}
 
-        allClimbs = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+function updateGradeInput() {
+    const sys = document.getElementById('gradeSystem').value;
+    const gInput = document.getElementById('grade');
+    gInput.type = (sys === "rosebloc") ? "number" : "text";
+    gInput.placeholder = (sys === "rosebloc") ? "1-16" : (sys === "vscale" ? "V5" : "7a");
+}
+
+async function fetchClimbs() {
+    db.ref(`users_climbs/${currentUser.uid}`).on('value', snap => {
+        const data = snap.val();
+        allClimbs = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
         allClimbs.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
         updateRecords(allClimbs);
         displayClimbs(allClimbs);
         initCharts(allClimbs);
@@ -67,60 +74,51 @@ async function fetchClimbs() {
 }
 
 function updateRecords(data) {
-    const normalClimbs = data.filter(d => !d.isComp).map(d => d.grade);
-    const compClimbs = data.filter(d => d.isComp).map(d => d.grade);
-    const maxNormal = normalClimbs.length > 0 ? Math.max(...normalClimbs) : "--";
-    const maxComp = compClimbs.length > 0 ? Math.max(...compClimbs) : "--";
-    document.getElementById('best-normal').innerText = maxNormal !== "--" ? `Niv. ${maxNormal}` : "--";
-    document.getElementById('best-comp').innerText = maxComp !== "--" ? `Niv. ${maxComp}` : "--";
+    const getScore = d => convertToNumeric(d.grade, d.system || "rosebloc");
+    const normal = data.filter(d => !d.isComp).map(getScore);
+    const comp = data.filter(d => d.isComp).map(getScore);
+    document.getElementById('best-normal').innerText = normal.length ? "Niv. " + Math.max(...normal) : "--";
+    document.getElementById('best-comp').innerText = comp.length ? "Niv. " + Math.max(...comp) : "--";
 }
 
-// --- C. GRAPHIQUES ---
 function initCharts(data) {
-    const ctxProg = document.getElementById('progressionChart').getContext('2d');
-    const ctxDiff = document.getElementById('difficultyChart').getContext('2d');
+    const ctxProg = document.getElementById('progressionChart');
+    const ctxDiff = document.getElementById('difficultyChart');
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
-    const labels = data.map(d => d.date.split('-').slice(1).join('/'));
-    const normalLineData = data.map(d => d.isComp ? null : d.grade);
-    const compLineData = data.map(d => d.isComp ? d.grade : null);
+    const labels = data.map(d => d.date.split('-').slice(1).reverse().join('/'));
+    const scores = data.map(d => convertToNumeric(d.grade, d.system || "rosebloc"));
 
     progressionChart = new Chart(ctxProg, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [
-                { label: 'Non-Compétition', data: normalLineData, borderColor: '#27ae60', borderWidth: 3, pointRadius: 4, tension: 0.3, spanGaps: true },
-                { label: 'Compétition', data: compLineData, borderColor: '#e74c3c', borderWidth: 3, pointRadius: 6, pointStyle: 'rectRot', tension: 0.3, spanGaps: true }
-            ]
+            datasets: [{
+                label: 'Niveau',
+                data: scores,
+                borderColor: '#27ae60',
+                tension: 0.3,
+                fill: true,
+                backgroundColor: 'rgba(39, 174, 96, 0.1)'
+            }]
         },
-        options: { maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { min: 1, max: 16, ticks: { stepSize: 1 } } } }
+        options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 16 } } }
     });
 
-    const countsN = Array(17).fill(0);
-    const countsC = Array(17).fill(0);
-    data.forEach(d => {
-        if (d.grade) {
-            if (d.isComp) countsC[d.grade]++;
-            else countsN[d.grade]++;
-        }
-    });
+    const counts = Array(17).fill(0);
+    data.forEach(d => { counts[Math.min(convertToNumeric(d.grade, d.system || "rosebloc"), 16)]++ });
 
     difficultyChart = new Chart(ctxDiff, {
         type: 'bar',
         data: {
             labels: Array.from({length: 16}, (_, i) => i + 1),
-            datasets: [
-                { label: 'Non-Compétition', data: countsN.slice(1), backgroundColor: '#2ecc71', borderRadius: 4 },
-                { label: 'Compétition', data: countsC.slice(1), backgroundColor: '#e74c3c', borderRadius: 4 }
-            ]
+            datasets: [{ label: 'Grimpes', data: counts.slice(1), backgroundColor: '#3498db' }]
         },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        options: { maintainAspectRatio: false }
     });
 }
 
-// --- D. FORMULAIRE ET UTILS ---
 const processImage = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -130,10 +128,8 @@ const processImage = (file) => {
             img.src = e.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 600; 
-                const scale = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
-                canvas.height = img.height * scale;
+                const scale = 600 / img.width;
+                canvas.width = 600; canvas.height = img.height * scale;
                 canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                 resolve(canvas.toDataURL('image/jpeg', 0.7));
             };
@@ -141,30 +137,28 @@ const processImage = (file) => {
     });
 };
 
-document.getElementById('climbForm').addEventListener('submit', async (e) => {
+document.getElementById('climbForm').onsubmit = async (e) => {
     e.preventDefault();
-    if (!currentUser) return;
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerText = "⏳...";
 
-    const fileInput = document.getElementById('photo');
-    let imageData = fileInput.files[0] ? await processImage(fileInput.files[0]) : "";
+    const imgData = document.getElementById('photo').files[0] ? await processImage(document.getElementById('photo').files[0]) : "";
 
     const newClimb = {
+        location: document.getElementById('location').value,
+        system: document.getElementById('gradeSystem').value,
+        grade: document.getElementById('grade').value,
         date: document.getElementById('date').value,
-        grade: parseInt(document.getElementById('grade').value),
         color: document.getElementById('color').value,
         tries: parseInt(document.getElementById('tries').value),
         isComp: document.getElementById('isComp').checked,
-        photo: imageData
+        photo: imgData
     };
 
     await db.ref(`users_climbs/${currentUser.uid}`).push(newClimb);
     e.target.reset();
     btn.disabled = false;
-    btn.innerText = "Enregistrer";
-});
+};
 
 function displayClimbs(data) {
     const list = document.getElementById('climbList');
@@ -174,16 +168,15 @@ function displayClimbs(data) {
     [...data].reverse().forEach(climb => {
         const div = document.createElement('div');
         div.className = `climb-item ${climb.isComp ? 'comp-session' : ''}`;
-        const dotColor = colorMap[climb.color] || "#ccc";
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
                 <div>
-                    <span style="color:#888; font-size:11px;">${climb.date}</span>
-                    ${climb.isComp ? '<span class="badge-comp">COMPÉ</span>' : ''}<br>
-                    <span class="color-dot" style="background-color: ${dotColor}"></span>
-                    <b>Niveau ${climb.grade}</b> <small>(${climb.tries} essais)</small>
+                    <small style="color:#888">${climb.date} • ${climb.location || 'Lieu inconnu'}</small><br>
+                    <span class="color-dot" style="background:${colorMap[climb.color] || '#ccc'}"></span>
+                    <b>${climb.grade}</b> <small>(${climb.tries} essais)</small>
+                    ${climb.isComp ? '<span class="badge-comp">COMPÉ</span>' : ''}
                 </div>
-                <button onclick="deleteClimb('${climb.id}')" style="background:#ff4757; color:white; border:none; padding:5px 10px; border-radius:8px; font-size:12px; width:auto;">Supprimer</button>
+                <button onclick="deleteClimb('${climb.id}')" style="padding:5px 10px; background:#ff4757; font-size:10px; width:auto">Supprimer</button>
             </div>
             ${climb.photo ? `<img src="${climb.photo}" style="width:100%; border-radius:12px; margin-top:10px;">` : ''}
         `;
@@ -192,13 +185,16 @@ function displayClimbs(data) {
 }
 
 function deleteClimb(id) {
-    if (confirm("Supprimer?")) db.ref(`users_climbs/${currentUser.uid}/${id}`).remove();
+    if (confirm("Supprimer ?")) db.ref(`users_climbs/${currentUser.uid}/${id}`).remove();
 }
 
 function updateCharts(range) {
-    const cutoff = new Date();
     const days = { '1w': 7, '1m': 30, '6m': 180 };
+    const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - (days[range] || 9999));
     const filtered = range === 'all' ? allClimbs : allClimbs.filter(d => new Date(d.date) >= cutoff);
+    
+    document.querySelectorAll('.filter-buttons button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
     initCharts(filtered);
 }
