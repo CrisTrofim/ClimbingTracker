@@ -44,11 +44,20 @@ document.getElementById('logoutBtn').onclick = () => auth.signOut();
 // --- B. GESTION DES DONNÉES ---
 async function fetchClimbs() {
     if (!currentUser) return;
-    // On récupère uniquement les données de l'utilisateur connecté (ID unique)
     const ref = db.ref(`users_climbs/${currentUser.uid}`);
     ref.on('value', snapshot => {
         const data = snapshot.val();
-        allClimbs = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
+        
+        // Si aucune donnée, on vide la liste et on arrête le chargement
+        if (!data) {
+            allClimbs = [];
+            document.getElementById('climbList').innerHTML = "Aucune grimpe pour le moment. Commencez à grimper !";
+            updateRecords([]);
+            initCharts([]);
+            return;
+        }
+
+        allClimbs = Object.entries(data).map(([id, val]) => ({ id, ...val }));
         allClimbs.sort((a, b) => new Date(a.date) - new Date(b.date));
         
         updateRecords(allClimbs);
