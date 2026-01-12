@@ -82,12 +82,14 @@ function updateRecords(data) {
         const best = list.reduce((prev, current) => {
             return (convertToNumeric(prev.grade, prev.system) > convertToNumeric(current.grade, current.system)) ? prev : current;
         });
-        // On affiche le grade tel qu'il a été saisi (ex: V5 ou 7a)
         return best.grade;
     };
 
-    document.getElementById('best-normal').innerText = getMax(normalClimbs);
-    document.getElementById('best-comp').innerText = getMax(compClimbs);
+    const bestNormal = getMax(normalClimbs);
+    const bestComp = getMax(compClimbs);
+
+    document.getElementById('best-normal').innerHTML = bestNormal !== "--" ? `⭐ ${bestNormal}` : "--";
+    document.getElementById('best-comp').innerHTML = bestComp !== "--" ? `🔥 ${bestComp}` : "--";
 }
 
 function initCharts(data) {
