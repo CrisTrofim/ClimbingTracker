@@ -1,12 +1,12 @@
 // CONFIGURATION FIREBASE (REMPLACE PAR TES INFOS)
 const firebaseConfig = {
-    apiKey: "AIzaSy...", 
-    authDomain: "climbingtracker-d0c24.firebaseapp.com",
-    databaseURL: "https://climbingtracker-d0c24-default-rtdb.firebaseio.com",
-    projectId: "climbingtracker-d0c24",
-    storageBucket: "climbingtracker-d0c24.appspot.com",
-    messagingSenderId: "...",
-    appId: "..."
+  apiKey: "AIzaSyAhPqDCcq42FzYnkyGvzJTFX1U3cYqHYE8",
+  authDomain: "climbingtracker-d0c24.firebaseapp.com",
+  databaseURL: "https://climbingtracker-d0c24-default-rtdb.firebaseio.com",
+  projectId: "climbingtracker-d0c24",
+  storageBucket: "climbingtracker-d0c24.firebasestorage.app",
+  messagingSenderId: "490789229720",
+  appId: "1:490789229720:web:9a97027005173d05066ced"
 };
 
 // Initialisation
