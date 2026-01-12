@@ -74,11 +74,20 @@ async function fetchClimbs() {
 }
 
 function updateRecords(data) {
-    const getScore = d => convertToNumeric(d.grade, d.system || "rosebloc");
-    const normal = data.filter(d => !d.isComp).map(getScore);
-    const comp = data.filter(d => d.isComp).map(getScore);
-    document.getElementById('best-normal').innerText = normal.length ? "Niv. " + Math.max(...normal) : "--";
-    document.getElementById('best-comp').innerText = comp.length ? "Niv. " + Math.max(...comp) : "--";
+    const normalClimbs = data.filter(d => !d.isComp);
+    const compClimbs = data.filter(d => d.isComp);
+
+    const getMax = (list) => {
+        if (!list.length) return "--";
+        const best = list.reduce((prev, current) => {
+            return (convertToNumeric(prev.grade, prev.system) > convertToNumeric(current.grade, current.system)) ? prev : current;
+        });
+        // On affiche le grade tel qu'il a été saisi (ex: V5 ou 7a)
+        return best.grade;
+    };
+
+    document.getElementById('best-normal').innerText = getMax(normalClimbs);
+    document.getElementById('best-comp').innerText = getMax(compClimbs);
 }
 
 function initCharts(data) {
@@ -87,35 +96,86 @@ function initCharts(data) {
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
+    // 1. Préparation des labels (Dates)
     const labels = data.map(d => d.date.split('-').slice(1).reverse().join('/'));
-    const scores = data.map(d => convertToNumeric(d.grade, d.system || "rosebloc"));
+
+    // 2. SÉPARATION DES DONNÉES pour la progression
+    // On crée deux tableaux : si c'est pas le bon type, on met 'null' pour que Chart.js ne trace pas de point
+    const normalScores = data.map(d => !d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc") : null);
+    const compScores = data.map(d => d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc") : null);
 
     progressionChart = new Chart(ctxProg, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [{
-                label: 'Niveau',
-                data: scores,
-                borderColor: '#27ae60',
-                tension: 0.3,
-                fill: true,
-                backgroundColor: 'rgba(39, 174, 96, 0.1)'
-            }]
+            datasets: [
+                {
+                    label: 'Normal',
+                    data: normalScores,
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    spanGaps: true // Relie les points même s'il y a des sessions compé entre deux
+                },
+                {
+                    label: 'Compétition',
+                    data: compScores,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 3,
+                    pointStyle: 'rectRot',
+                    pointRadius: 6,
+                    tension: 0.3,
+                    fill: true,
+                    spanGaps: true
+                }
+            ]
         },
-        options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 16 } } }
+        options: { 
+            maintainAspectRatio: false, 
+            plugins: { legend: { labels: { color: '#666', font: { weight: 'bold' } } } },
+            scales: { y: { beginAtZero: false, min: 1, max: 16, ticks: { stepSize: 1 } } } 
+        }
     });
 
-    const counts = Array(17).fill(0);
-    data.forEach(d => { counts[Math.min(convertToNumeric(d.grade, d.system || "rosebloc"), 16)]++ });
+    // 3. SÉPARATION DES DONNÉES pour la répartition (Barres)
+    const countsNormal = Array(17).fill(0);
+    const countsComp = Array(17).fill(0);
+    
+    data.forEach(d => {
+        const score = Math.min(convertToNumeric(d.grade, d.system || "rosebloc"), 16);
+        if (d.isComp) countsComp[score]++;
+        else countsNormal[score]++;
+    });
 
     difficultyChart = new Chart(ctxDiff, {
         type: 'bar',
         data: {
             labels: Array.from({length: 16}, (_, i) => i + 1),
-            datasets: [{ label: 'Grimpes', data: counts.slice(1), backgroundColor: '#3498db' }]
+            datasets: [
+                { 
+                    label: 'Normal', 
+                    data: countsNormal.slice(1), 
+                    backgroundColor: '#2ecc71',
+                    borderRadius: 5
+                },
+                { 
+                    label: 'Compétition', 
+                    data: countsComp.slice(1), 
+                    backgroundColor: '#e74c3c',
+                    borderRadius: 5
+                }
+            ]
         },
-        options: { maintainAspectRatio: false }
+        options: { 
+            maintainAspectRatio: false,
+            scales: { 
+                x: { stacked: false }, // Les barres sont côte à côte pour mieux comparer
+                y: { beginAtZero: true, ticks: { stepSize: 1 } } 
+            }
+        }
     });
 }
 

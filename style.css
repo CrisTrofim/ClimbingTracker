@@ -39,11 +39,23 @@ header h1 { font-size: 1.5rem; margin: 0; }
 
 .records-dark {
     display: flex; justify-content: space-around; text-align: center; 
-    background: #1a1a1a !important; color: white;
+    background: #1a1a1a !important; color: white; padding: 25px !important;
 }
-.records-dark p { margin: 0; font-size: 0.7rem; color: #888; }
-.records-dark h2 { margin: 5px 0; font-size: 1.4rem; }
-.divider { width: 1px; background: #444; margin: 0 10px; }
+
+.records-dark p { 
+    margin: 0; font-size: 0.75rem; text-transform: uppercase; 
+    letter-spacing: 1px; color: #aaa; margin-bottom: 5px;
+}
+
+.records-dark h2 { margin: 0; font-size: 1.8rem; font-weight: 800; }
+
+#best-normal { color: #2ecc71; text-shadow: 0 0 10px rgba(46, 204, 113, 0.3); }
+#best-comp { color: #e74c3c; text-shadow: 0 0 10px rgba(231, 76, 60, 0.3); }
+
+.divider { width: 2px; background: linear-gradient(#333, #555, #333); margin: 0 15px; border-radius: 2px; }
+
+/* Petit effet de pulse sur le bouton enregistrer */
+#submitBtn:hover { background: #219150; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3); }
 
 .input-group { display: flex; flex-direction: column; margin-bottom: 15px; }
 .input-row { display: flex; gap: 10px; }
