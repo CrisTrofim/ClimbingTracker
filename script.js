@@ -321,9 +321,34 @@ function displayClimbs(data) {
     });
 }
 
+let climbToDelete = null; // Variable temporaire pour stocker l'ID
+
 function deleteClimb(id) {
-    if (confirm("Supprimer ?")) db.ref(`users_climbs/${currentUser.uid}/${id}`).remove();
+    climbToDelete = id; // On mémorise l'ID à supprimer
+    document.getElementById('custom-modal').style.display = 'flex';
 }
+
+// Gestion des boutons de la modale
+document.getElementById('cancelDelete').onclick = () => {
+    document.getElementById('custom-modal').style.display = 'none';
+    climbToDelete = null;
+};
+
+document.getElementById('confirmDelete').onclick = () => {
+    if (climbToDelete) {
+        db.ref(`users_climbs/${currentUser.uid}/${climbToDelete}`).remove();
+        document.getElementById('custom-modal').style.display = 'none';
+        climbToDelete = null;
+    }
+};
+
+// Fermer si on clique à l'extérieur de la carte
+window.onclick = (event) => {
+    const modal = document.getElementById('custom-modal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+};
 
 function updateCharts(range) {
     const days = { '1w': 7, '1m': 30, '6m': 180, '1y': 365 };

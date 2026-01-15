@@ -132,3 +132,47 @@ button {
 .climb-item { border-bottom: 1px solid #eee; padding: 15px 0; }
 .badge-comp { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
 .color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; border: 1px solid #ccc; vertical-align: middle; }
+
+/* --- Custom Modal Style --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px); /* Flou l'arrière-plan */
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.modal-card {
+    background: white;
+    padding: 30px;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    animation: modalPop 0.25s ease-out;
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-icon { font-size: 2.5rem; margin-bottom: 10px; }
+.modal-card h3 { margin: 0 0 10px 0; font-size: 1.2rem; color: #1a1a1a; }
+.modal-card p { color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+
+.modal-buttons { display: flex; gap: 10px; }
+
+.modal-buttons button {
+    flex: 1;
+    padding: 12px;
+    font-size: 0.9rem;
+}
+
+.btn-secondary { background: #eee !important; color: #444 !important; }
+.btn-danger { background: #ff4757 !important; color: white !important; }
+
+.btn-danger:hover { background: #ff2e44 !important; }
