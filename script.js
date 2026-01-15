@@ -184,6 +184,19 @@ function initCharts(data) {
         },
         options: { 
             maintainAspectRatio: false, 
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            let val = context.parsed.y;
+                            // On récupère le nom du grade selon le système choisi
+                            let gradeName = config.labels[val] || val;
+                            return `${label}: ${gradeName}`;
+                        }
+                    }
+                }
+            },
             scales: { 
                 y: { 
                     beginAtZero: false, 
@@ -205,7 +218,8 @@ function initCharts(data) {
     const countsComp = Array(config.max + 1).fill(0);
     
     data.forEach(d => {
-        let scoreRaw = convertToNumeric(d.grade, d.system || "rosebloc", d.isComp);
+        // On applique ici AUSSI la logique : pas de conversion si displaySys est rosebloc
+        let scoreRaw = convertToNumeric(d.grade, d.system || "rosebloc", d.isComp, displaySys);
         let scoreDisplay = Math.round(convertForDisplay(scoreRaw, displaySys));
         
         if (scoreDisplay >= 0 && scoreDisplay <= config.max) {
