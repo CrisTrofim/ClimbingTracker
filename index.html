@@ -23,7 +23,14 @@
 
     <div id="app-content" class="container" style="display: none;">
         <header>
-            <h1> Mon Tracker</h1>
+            <div class="header-left">
+                <h1>Mon Tracker</h1>
+                <select id="displaySystem" class="header-select" onchange="refreshAllData()">
+                    <option value="rosebloc">Rose Bloc</option>
+                    <option value="vscale">V-Scale</option>
+                    <option value="french">Français</option>
+                </select>
+            </div>
             <button id="logoutBtn">Déconnexion</button>
         </header>
 
@@ -104,14 +111,6 @@
             </div>
 
             <div class="right-col">
-                <div class="card">
-                    <label>Système d'affichage des graphiques :</label>
-                    <select id="displaySystem" onchange="initCharts(allClimbs)">
-                        <option value="rosebloc">Rose Bloc (Equivalent Normal)</option>
-                        <option value="vscale">V-Scale</option>
-                        <option value="french">Français</option>
-                    </select>
-                </div>
                 <div class="card chart-card">
                     <h3>Progression</h3>
                     <div class="filter-buttons">

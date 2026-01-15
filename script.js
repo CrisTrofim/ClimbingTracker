@@ -20,6 +20,11 @@ const SYSTEM_CONFIG = {
     }
 };
 
+function refreshAllData() {
+    updateRecords(allClimbs);
+    initCharts(allClimbs);
+}
+
 // Fonction utilitaire pour adapter le score numérique au système d'affichage
 function convertForDisplay(score, targetSystem) {
     return score; 
@@ -100,28 +105,35 @@ async function fetchClimbs() {
         const data = snap.val();
         allClimbs = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
         allClimbs.sort((a, b) => new Date(a.date) - new Date(b.date));
-        updateRecords(allClimbs);
+        refreshAllData(); // Appel groupé
         displayClimbs(allClimbs);
-        initCharts(allClimbs);
     });
 }
 
 function updateRecords(data) {
+    const displaySys = document.getElementById('displaySystem')?.value || 'rosebloc';
+    const config = SYSTEM_CONFIG[displaySys];
+    
     const normalClimbs = data.filter(d => !d.isComp);
     const compClimbs = data.filter(d => d.isComp);
 
-    const getMax = (list) => {
+    const getBestGradeFormatted = (list) => {
         if (!list.length) return "--";
-        const best = list.reduce((prev, current) => {
-            // On passe le flag isComp pour que le 15 compé soit comparé comme un 8 normal
-            return (convertToNumeric(prev.grade, prev.system, prev.isComp) > 
-                    convertToNumeric(current.grade, current.system, current.isComp)) ? prev : current;
+        
+        // On cherche l'élément qui a le score numérique le plus élevé
+        const bestItem = list.reduce((prev, current) => {
+            // Pour la comparaison pure, on utilise la logique standard
+            return (convertToNumeric(prev.grade, prev.system, prev.isComp, displaySys) > 
+                    convertToNumeric(current.grade, current.system, current.isComp, displaySys)) ? prev : current;
         });
-        return best.grade;
+
+        // Conversion du score de l'item choisi vers le système d'affichage cible
+        let numericScore = convertToNumeric(bestItem.grade, bestItem.system, bestItem.isComp, displaySys);
+        return config.labels[Math.round(numericScore)] || bestItem.grade;
     };
 
-    const bestNormal = getMax(normalClimbs);
-    const bestComp = getMax(compClimbs);
+    const bestNormal = getBestGradeFormatted(normalClimbs);
+    const bestComp = getBestGradeFormatted(compClimbs);
 
     document.getElementById('best-normal').innerHTML = bestNormal !== "--" ? `⭐ ${bestNormal}` : "--";
     document.getElementById('best-comp').innerHTML = bestComp !== "--" ? `🔥 ${bestComp}` : "--";
