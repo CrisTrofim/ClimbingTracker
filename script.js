@@ -1,11 +1,11 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyAhPqDCcq42FzYnkyGvzJTFX1U3cYqHYE8",
-    authDomain: "climbingtracker-d0c24.firebaseapp.com",
-    databaseURL: "https://climbingtracker-d0c24-default-rtdb.firebaseio.com",
-    projectId: "climbingtracker-d0c24",
-    storageBucket: "climbingtracker-d0c24.firebasestorage.app",
-    messagingSenderId: "490789229720",
-    appId: "1:490789229720:web:9a97027005173d05066ced"
+  apiKey: "AIzaSyAhPqDCcq42FzYnkyGvzJTFX1U3cYqHYE8",
+  authDomain: "climbingtracker-d0c24.firebaseapp.com",
+  databaseURL: "https://climbingtracker-d0c24-default-rtdb.firebaseio.com",
+  projectId: "climbingtracker-d0c24",
+  storageBucket: "climbingtracker-d0c24.firebasestorage.app",
+  messagingSenderId: "490789229720",
+  appId: "1:490789229720:web:9a97027005173d05066ced"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -16,60 +16,50 @@ let currentUser = null;
 let allClimbs = [];
 let progressionChart, difficultyChart;
 
-// Configuration des échelles pour affichage
-const SYSTEM_CONFIG = {
-    rosebloc: { max: 25, labels: Array.from({length: 25}, (_, i) => i + 1) },
-    vscale: { max: 18, labels: Array.from({length: 19}, (_, i) => "V" + i) },
-    french: { 
-        max: 18, 
-        labels: ["4", "5", "6a", "6a+", "6b", "6b+", "6c", "6c+", "7a", "7a+", "7b", "7b+", "7c", "7c+", "8a", "8a+", "8b", "8b+", "9a"] 
-    }
+// Table de conversion simplifiée pour les graphiques (Score de 1 à 17)
+const gradeMap = {
+    "vscale": { "V0": 1, "V1": 2, "V2": 3, "V3": 4, "V4": 5, "V5": 6, "V6": 7, "V7": 8, "V8": 9, "V9": 10 },
+    "french": { "4": 1, "5": 2, "6a": 4, "6b": 5, "6c": 7, "7a": 9, "7b": 11, "7c": 13, "8a": 15 }
 };
 
-// --- LOGIQUE DE CONVERSION ---
-
-function getUniversalScore(grade, system) {
-    let g = grade.toString().trim();
-    if (system === "rosebloc") return parseInt(g) || 1;
-    if (system === "vscale") {
-        let vNum = parseInt(g.replace("V", "")) || 0;
-        return (vNum === 0) ? 1 : vNum + 2; 
-    }
-    if (system === "french") {
-        const idx = SYSTEM_CONFIG.french.labels.findIndex(l => g.toLowerCase().startsWith(l.toLowerCase()));
-        return idx !== -1 ? idx + 1 : 1;
-    }
-    return parseInt(g) || 1;
+function convertToNumeric(grade, system) {
+    if (system === "rosebloc") return parseInt(grade) || 0;
+    if (system === "vscale") return gradeMap.vscale[grade] || parseInt(grade.replace("V","")) || 0;
+    if (system === "french") return gradeMap.french[grade.substring(0,2)] || 0;
+    return parseInt(grade) || 0;
 }
 
-function convertForDisplay(score, targetSystem) {
-    if (targetSystem === "vscale") return score <= 1 ? 0 : score - 2;
-    if (targetSystem === "french") return Math.max(0, score - 1);
-    return score;
-}
-
-// --- AUTH & DATA ---
-
+// --- AUTH ---
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('app-content').style.display = 'block';
+        if (typeof google !== 'undefined') initAutocomplete();
         fetchClimbs();
     } else {
+        currentUser = null;
         document.getElementById('auth-screen').style.display = 'flex';
         document.getElementById('app-content').style.display = 'none';
     }
 });
 
-document.getElementById('loginBtn').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+document.getElementById('loginBtn').onclick = () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider);
+};
 document.getElementById('logoutBtn').onclick = () => auth.signOut();
+
+function initAutocomplete() {
+    const input = document.getElementById('location');
+    new google.maps.places.Autocomplete(input);
+}
 
 function updateGradeInput() {
     const sys = document.getElementById('gradeSystem').value;
     const gInput = document.getElementById('grade');
     gInput.type = (sys === "rosebloc") ? "number" : "text";
-    gInput.placeholder = (sys === "rosebloc") ? "1-25" : (sys === "vscale" ? "V5" : "7a");
+    gInput.placeholder = (sys === "rosebloc") ? "1-16" : (sys === "vscale" ? "V5" : "7a");
 }
 
 async function fetchClimbs() {
@@ -84,81 +74,137 @@ async function fetchClimbs() {
 }
 
 function updateRecords(data) {
-    const getBest = (list) => {
+    const normalClimbs = data.filter(d => !d.isComp);
+    const compClimbs = data.filter(d => d.isComp);
+
+    const getMax = (list) => {
         if (!list.length) return "--";
-        return list.reduce((prev, curr) => 
-            getUniversalScore(prev.grade, prev.system) > getUniversalScore(curr.grade, curr.system) ? prev : curr
-        ).grade;
+        const best = list.reduce((prev, current) => {
+            return (convertToNumeric(prev.grade, prev.system) > convertToNumeric(current.grade, current.system)) ? prev : current;
+        });
+        return best.grade;
     };
-    document.getElementById('best-normal').innerText = getBest(data.filter(d => !d.isComp));
-    document.getElementById('best-comp').innerText = getBest(data.filter(d => d.isComp));
+
+    const bestNormal = getMax(normalClimbs);
+    const bestComp = getMax(compClimbs);
+
+    document.getElementById('best-normal').innerHTML = bestNormal !== "--" ? `⭐ ${bestNormal}` : "--";
+    document.getElementById('best-comp').innerHTML = bestComp !== "--" ? `🔥 ${bestComp}` : "--";
 }
 
-// --- GRAPHIQUES ---
-
 function initCharts(data) {
-    const displaySys = document.getElementById('displaySystem').value;
-    const config = SYSTEM_CONFIG[displaySys];
     const ctxProg = document.getElementById('progressionChart');
     const ctxDiff = document.getElementById('difficultyChart');
-
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
+    // 1. Préparation des labels (Dates)
     const labels = data.map(d => d.date.split('-').slice(1).reverse().join('/'));
 
-    const series = (isComp) => data.map(d => {
-        if (d.isComp !== isComp) return null;
-        return convertForDisplay(getUniversalScore(d.grade, d.system), displaySys);
-    });
+    // 2. SÉPARATION DES DONNÉES pour la progression
+    // On crée deux tableaux : si c'est pas le bon type, on met 'null' pour que Chart.js ne trace pas de point
+    const normalScores = data.map(d => !d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc") : null);
+    const compScores = data.map(d => d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc") : null);
 
     progressionChart = new Chart(ctxProg, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
-                { label: 'Normal', data: series(false), borderColor: '#2ecc71', spanGaps: true, tension: 0.3 },
-                { label: 'Compé', data: series(true), borderColor: '#e74c3c', spanGaps: true, tension: 0.3 }
+                {
+                    label: 'Normal',
+                    data: normalScores,
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    spanGaps: true // Relie les points même s'il y a des sessions compé entre deux
+                },
+                {
+                    label: 'Compétition',
+                    data: compScores,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 3,
+                    pointStyle: 'rectRot',
+                    pointRadius: 6,
+                    tension: 0.3,
+                    fill: true,
+                    spanGaps: true
+                }
             ]
         },
-        options: {
-            maintainAspectRatio: false,
-            scales: {
-                y: { 
-                    min: 0, 
-                    max: config.max, 
-                    ticks: { callback: (val) => config.labels[val] || val } 
-                }
-            }
+        options: { 
+            maintainAspectRatio: false, 
+            plugins: { legend: { labels: { color: '#666', font: { weight: 'bold' } } } },
+            scales: { y: { beginAtZero: false, min: 1, max: 16, ticks: { stepSize: 1 } } } 
         }
     });
 
-    const countsNormal = Array(config.max + 1).fill(0);
-    const countsComp = Array(config.max + 1).fill(0);
+    // 3. SÉPARATION DES DONNÉES pour la répartition (Barres)
+    const countsNormal = Array(17).fill(0);
+    const countsComp = Array(17).fill(0);
+    
     data.forEach(d => {
-        const score = Math.min(convertForDisplay(getUniversalScore(d.grade, d.system), displaySys), config.max);
-        if (d.isComp) countsComp[score]++; else countsNormal[score]++;
+        const score = Math.min(convertToNumeric(d.grade, d.system || "rosebloc"), 16);
+        if (d.isComp) countsComp[score]++;
+        else countsNormal[score]++;
     });
 
     difficultyChart = new Chart(ctxDiff, {
         type: 'bar',
         data: {
-            labels: config.labels,
+            labels: Array.from({length: 16}, (_, i) => i + 1),
             datasets: [
-                { label: 'Normal', data: countsNormal, backgroundColor: '#2ecc71' },
-                { label: 'Compé', data: countsComp, backgroundColor: '#e74c3c' }
+                { 
+                    label: 'Normal', 
+                    data: countsNormal.slice(1), 
+                    backgroundColor: '#2ecc71',
+                    borderRadius: 5
+                },
+                { 
+                    label: 'Compétition', 
+                    data: countsComp.slice(1), 
+                    backgroundColor: '#e74c3c',
+                    borderRadius: 5
+                }
             ]
         },
-        options: { maintainAspectRatio: false }
+        options: { 
+            maintainAspectRatio: false,
+            scales: { 
+                x: { stacked: false }, // Les barres sont côte à côte pour mieux comparer
+                y: { beginAtZero: true, ticks: { stepSize: 1 } } 
+            }
+        }
     });
 }
 
-// --- FORMULAIRE ET ENREGISTREMENT ---
+const processImage = (file) => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const scale = 600 / img.width;
+                canvas.width = 600; canvas.height = img.height * scale;
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+        };
+    });
+};
 
 document.getElementById('climbForm').onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
+
+    const imgData = document.getElementById('photo').files[0] ? await processImage(document.getElementById('photo').files[0]) : "";
 
     const newClimb = {
         location: document.getElementById('location').value,
@@ -167,7 +213,8 @@ document.getElementById('climbForm').onsubmit = async (e) => {
         date: document.getElementById('date').value,
         color: document.getElementById('color').value,
         tries: parseInt(document.getElementById('tries').value),
-        isComp: document.getElementById('isComp').checked
+        isComp: document.getElementById('isComp').checked,
+        photo: imgData
     };
 
     await db.ref(`users_climbs/${currentUser.uid}`).push(newClimb);
@@ -178,32 +225,29 @@ document.getElementById('climbForm').onsubmit = async (e) => {
 function displayClimbs(data) {
     const list = document.getElementById('climbList');
     list.innerHTML = "";
-    const colorMap = { 
-        "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71", 
-        "Turquoise": "#40E0D0", "Bleu": "#3498db", "Rouge": "#e74c3c", 
-        "Rose": "#ff9ff3", "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6" 
-    };
+    const colorMap = { "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71", "Bleu": "#3498db", "Rouge": "#e74c3c", "Rose": "#ff9ff3", "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6" };
 
     [...data].reverse().forEach(climb => {
         const div = document.createElement('div');
-        div.className = 'climb-item';
+        div.className = `climb-item ${climb.isComp ? 'comp-session' : ''}`;
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
                 <div>
-                    <small style="color:#888">${climb.date}</small><br>
+                    <small style="color:#888">${climb.date} • ${climb.location || 'Lieu inconnu'}</small><br>
                     <span class="color-dot" style="background:${colorMap[climb.color] || '#ccc'}"></span>
                     <b>${climb.grade}</b> <small>(${climb.tries} essais)</small>
                     ${climb.isComp ? '<span class="badge-comp">COMPÉ</span>' : ''}
                 </div>
                 <button onclick="deleteClimb('${climb.id}')" style="padding:5px 10px; background:#ff4757; font-size:10px; width:auto">Supprimer</button>
             </div>
+            ${climb.photo ? `<img src="${climb.photo}" style="width:100%; border-radius:12px; margin-top:10px;">` : ''}
         `;
         list.appendChild(div);
     });
 }
 
 function deleteClimb(id) {
-    if (confirm("Supprimer cette grimpe ?")) db.ref(`users_climbs/${currentUser.uid}/${id}`).remove();
+    if (confirm("Supprimer ?")) db.ref(`users_climbs/${currentUser.uid}/${id}`).remove();
 }
 
 function updateCharts(range) {
@@ -211,5 +255,8 @@ function updateCharts(range) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - (days[range] || 9999));
     const filtered = range === 'all' ? allClimbs : allClimbs.filter(d => new Date(d.date) >= cutoff);
+    
+    document.querySelectorAll('.filter-buttons button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
     initCharts(filtered);
 }
