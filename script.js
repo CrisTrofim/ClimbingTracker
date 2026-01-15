@@ -8,6 +8,22 @@ const firebaseConfig = {
   appId: "1:490789229720:web:9a97027005173d05066ced"
 };
 
+const SYSTEM_CONFIG = {
+    rosebloc: { max: 24, labels: Array.from({length: 25}, (_, i) => i) },
+    vscale: { max: 18, labels: Array.from({length: 19}, (_, i) => "V" + i) },
+    french: { 
+        max: 20, 
+        labels: ["0","1","2","3","4","5","6a","6a+","6b","6b+","6c","6c+","7a","7a+","7b","7b+","7c","7c+","8a","8a+","8b","8b+","9a"] 
+    }
+};
+
+// Fonction utilitaire pour adapter le score numérique au système d'affichage
+function convertForDisplay(score, targetSystem) {
+    if (targetSystem === "vscale") return Math.max(0, score - 2); // V0 commence à 2 dans votre conversion
+    if (targetSystem === "french") return Math.max(0, score - 1); // 4 commence à 1
+    return score;
+}
+
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -115,16 +131,28 @@ function updateRecords(data) {
 function initCharts(data) {
     const ctxProg = document.getElementById('progressionChart');
     const ctxDiff = document.getElementById('difficultyChart');
+    
+    // Récupérer le système choisi
+    const displaySys = document.getElementById('displaySystem')?.value || 'rosebloc';
+    const config = SYSTEM_CONFIG[displaySys];
+
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
-    // 1. Préparation des labels (Dates)
     const labels = data.map(d => d.date.split('-').slice(1).reverse().join('/'));
 
-    // 2. SÉPARATION DES DONNÉES pour la progression
-    // On crée deux tableaux : si c'est pas le bon type, on met 'null' pour que Chart.js ne trace pas de point
-    const normalScores = data.map(d => !d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc", false) : null);
-    const compScores = data.map(d => d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc", true) : null);
+    // 1. Préparation des données de progression
+    const normalScores = data.map(d => {
+        if (d.isComp) return null;
+        let score = convertToNumeric(d.grade, d.system || "rosebloc", false);
+        return convertForDisplay(score, displaySys);
+    });
+
+    const compScores = data.map(d => {
+        if (!d.isComp) return null;
+        let score = convertToNumeric(d.grade, d.system || "rosebloc", true);
+        return convertForDisplay(score, displaySys);
+    });
 
     progressionChart = new Chart(ctxProg, {
         type: 'line',
@@ -136,17 +164,15 @@ function initCharts(data) {
                     data: normalScores,
                     borderColor: '#2ecc71',
                     backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                    borderWidth: 3,
                     tension: 0.3,
                     fill: true,
-                    spanGaps: true // Relie les points même s'il y a des sessions compé entre deux
+                    spanGaps: true
                 },
                 {
-                    label: 'Compétition',
+                    label: 'Compétition (Ajusté)',
                     data: compScores,
                     borderColor: '#e74c3c',
                     backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    borderWidth: 3,
                     pointStyle: 'rectRot',
                     pointRadius: 6,
                     tension: 0.3,
@@ -157,47 +183,48 @@ function initCharts(data) {
         },
         options: { 
             maintainAspectRatio: false, 
-            plugins: { legend: { labels: { color: '#666', font: { weight: 'bold' } } } },
-            scales: { y: { beginAtZero: false, min: 1, max: 16, ticks: { stepSize: 1 } } } 
+            scales: { 
+                y: { 
+                    beginAtZero: false, 
+                    min: 0, 
+                    max: config.max, // Utilise 24 pour Rosebloc, 18 pour V-Scale
+                    ticks: { 
+                        stepSize: 1,
+                        callback: function(value) {
+                            return config.labels[value] || value; // Affiche "V7" ou "7a" sur l'axe
+                        }
+                    } 
+                } 
+            } 
         }
     });
 
-    // 3. SÉPARATION DES DONNÉES pour la répartition (Barres)
-    const countsNormal = Array(17).fill(0);
-    const countsComp = Array(17).fill(0);
+    // 2. Préparation des données de répartition (Barres)
+    const countsNormal = Array(config.max + 1).fill(0);
+    const countsComp = Array(config.max + 1).fill(0);
     
     data.forEach(d => {
-        // On utilise true/false selon l'état du bloc
-        const score = Math.min(convertToNumeric(d.grade, d.system || "rosebloc", d.isComp), 16);
-        if (d.isComp) countsComp[score]++;
-        else countsNormal[score]++;
+        let scoreRaw = convertToNumeric(d.grade, d.system || "rosebloc", d.isComp);
+        let scoreDisplay = Math.round(convertForDisplay(scoreRaw, displaySys));
+        
+        if (scoreDisplay >= 0 && scoreDisplay <= config.max) {
+            if (d.isComp) countsComp[scoreDisplay]++;
+            else countsNormal[scoreDisplay]++;
+        }
     });
 
     difficultyChart = new Chart(ctxDiff, {
         type: 'bar',
         data: {
-            labels: Array.from({length: 16}, (_, i) => i + 1),
+            labels: config.labels,
             datasets: [
-                { 
-                    label: 'Normal', 
-                    data: countsNormal.slice(1), 
-                    backgroundColor: '#2ecc71',
-                    borderRadius: 5
-                },
-                { 
-                    label: 'Compétition', 
-                    data: countsComp.slice(1), 
-                    backgroundColor: '#e74c3c',
-                    borderRadius: 5
-                }
+                { label: 'Normal', data: countsNormal, backgroundColor: '#2ecc71', borderRadius: 5 },
+                { label: 'Compétition', data: countsComp, backgroundColor: '#e74c3c', borderRadius: 5 }
             ]
         },
         options: { 
             maintainAspectRatio: false,
-            scales: { 
-                x: { stacked: false }, // Les barres sont côte à côte pour mieux comparer
-                y: { beginAtZero: true, ticks: { stepSize: 1 } } 
-            }
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
 }
