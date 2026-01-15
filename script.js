@@ -314,7 +314,7 @@ function deleteClimb(id) {
 }
 
 function updateCharts(range) {
-    const days = { '1w': 7, '1m': 30, '6m': 180 };
+    const days = { '1w': 7, '1m': 30, '6m': 180, '1y': 365 };
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - (days[range] || 9999));
     const filtered = range === 'all' ? allClimbs : allClimbs.filter(d => new Date(d.date) >= cutoff);
