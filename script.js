@@ -16,17 +16,35 @@ let currentUser = null;
 let allClimbs = [];
 let progressionChart, difficultyChart;
 
-// Table de conversion simplifiée pour les graphiques (Score de 1 à 17)
-const gradeMap = {
-    "vscale": { "V0": 1, "V1": 2, "V2": 3, "V3": 4, "V4": 5, "V5": 6, "V6": 7, "V7": 8, "V8": 9, "V9": 10 },
-    "french": { "4": 1, "5": 2, "6a": 4, "6b": 5, "6c": 7, "7a": 9, "7b": 11, "7c": 13, "8a": 15 }
-};
+function convertToNumeric(grade, system, isComp = false) {
+    let g = parseInt(grade) || 1;
 
-function convertToNumeric(grade, system) {
-    if (system === "rosebloc") return parseInt(grade) || 0;
-    if (system === "vscale") return gradeMap.vscale[grade] || parseInt(grade.replace("V","")) || 0;
-    if (system === "french") return gradeMap.french[grade.substring(0,2)] || 0;
-    return parseInt(grade) || 0;
+    if (system === "rosebloc") {
+        if (isComp) {
+            // Ton échelle raffinée : Compétition -> Équivalent Normal
+            const refinedMap = {
+                1:1, 2:2, 3:3, 4:3, 5:4, 6:4, 7:5, 8:5, 9:6, 10:6, 11:6, 
+                12:7, 13:7, 14:8, 15:8, 16:9, 17:9, 18:10, 19:11, 20:12, 21:13, 22:14
+            };
+            return refinedMap[g] || (g > 22 ? g - 8 : g);
+        }
+        return g; // Si c'est normal, on retourne le chiffre tel quel
+    }
+    
+    // Conversion V-Scale vers score numérique Rosebloc (V0 = 2)
+    if (system === "vscale") {
+        let vNum = parseInt(grade.toString().replace("V", "")) || 0;
+        return vNum + 2; 
+    }
+    
+    // Conversion Français (approximation pour le graphique)
+    if (system === "french") {
+        const frenchLabels = ["4","5","6a","6a+","6b","6b+","6c","6c+","7a","7a+","7b","7b+","7c","7c+","8a","8a+","8b","8b+","9a"];
+        const idx = frenchLabels.indexOf(grade);
+        return idx !== -1 ? idx + 1 : 1;
+    }
+
+    return g;
 }
 
 // --- AUTH ---
@@ -80,7 +98,9 @@ function updateRecords(data) {
     const getMax = (list) => {
         if (!list.length) return "--";
         const best = list.reduce((prev, current) => {
-            return (convertToNumeric(prev.grade, prev.system) > convertToNumeric(current.grade, current.system)) ? prev : current;
+            // On passe le flag isComp pour que le 15 compé soit comparé comme un 8 normal
+            return (convertToNumeric(prev.grade, prev.system, prev.isComp) > 
+                    convertToNumeric(current.grade, current.system, current.isComp)) ? prev : current;
         });
         return best.grade;
     };
@@ -103,8 +123,8 @@ function initCharts(data) {
 
     // 2. SÉPARATION DES DONNÉES pour la progression
     // On crée deux tableaux : si c'est pas le bon type, on met 'null' pour que Chart.js ne trace pas de point
-    const normalScores = data.map(d => !d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc") : null);
-    const compScores = data.map(d => d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc") : null);
+    const normalScores = data.map(d => !d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc", false) : null);
+    const compScores = data.map(d => d.isComp ? convertToNumeric(d.grade, d.system || "rosebloc", true) : null);
 
     progressionChart = new Chart(ctxProg, {
         type: 'line',
@@ -147,7 +167,8 @@ function initCharts(data) {
     const countsComp = Array(17).fill(0);
     
     data.forEach(d => {
-        const score = Math.min(convertToNumeric(d.grade, d.system || "rosebloc"), 16);
+        // On utilise true/false selon l'état du bloc
+        const score = Math.min(convertToNumeric(d.grade, d.system || "rosebloc", d.isComp), 16);
         if (d.isComp) countsComp[score]++;
         else countsNormal[score]++;
     });
@@ -225,7 +246,7 @@ document.getElementById('climbForm').onsubmit = async (e) => {
 function displayClimbs(data) {
     const list = document.getElementById('climbList');
     list.innerHTML = "";
-    const colorMap = { "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71", "Bleu": "#3498db", "Rouge": "#e74c3c", "Rose": "#ff9ff3", "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6" };
+    const colorMap = { "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71", "Turquoise": "#40E0D0", "Bleu": "#3498db", "Rouge": "#e74c3c", "Rose": "#ff9ff3", "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6" };
 
     [...data].reverse().forEach(climb => {
         const div = document.createElement('div');
