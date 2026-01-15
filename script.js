@@ -10,18 +10,19 @@ const firebaseConfig = {
 
 const SYSTEM_CONFIG = {
     rosebloc: { max: 24, labels: Array.from({length: 25}, (_, i) => i) },
-    vscale: { max: 18, labels: Array.from({length: 19}, (_, i) => "V" + i) },
+    vscale: { 
+        max: 20, 
+        labels: ["-", "-", "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11", "V12", "V13", "V14", "V15", "V16", "V17", "V18"] 
+    },
     french: { 
         max: 20, 
-        labels: ["0","1","2","3","4","5","6a","6a+","6b","6b+","6c","6c+","7a","7a+","7b","7b+","7c","7c+","8a","8a+","8b","8b+","9a"] 
+        labels: ["-", "4", "5", "6a", "6a+", "6b", "6b+", "6c", "6c+", "7a", "7a+", "7b", "7b+", "7c", "7c+", "8a", "8a+", "8b", "8b+", "9a", "9a+"] 
     }
 };
 
 // Fonction utilitaire pour adapter le score numérique au système d'affichage
 function convertForDisplay(score, targetSystem) {
-    if (targetSystem === "vscale") return Math.max(0, score - 2); // V0 commence à 2 dans votre conversion
-    if (targetSystem === "french") return Math.max(0, score - 1); // 4 commence à 1
-    return score;
+    return score; 
 }
 
 firebase.initializeApp(firebaseConfig);
@@ -32,34 +33,32 @@ let currentUser = null;
 let allClimbs = [];
 let progressionChart, difficultyChart;
 
-function convertToNumeric(grade, system, isComp = false) {
+function convertToNumeric(grade, system, isComp = false, targetDisplaySystem = "rosebloc") {
     let g = parseInt(grade) || 1;
 
+    // Si on est en système Rosebloc, on garde le chiffre brut (pas de conversion compé)
     if (system === "rosebloc") {
-        if (isComp) {
-            // Ton échelle raffinée : Compétition -> Équivalent Normal
+        // Exception : Si on veut afficher en V-Scale ou Français, on DOIT convertir le compé en normal d'abord
+        if (isComp && targetDisplaySystem !== "rosebloc") {
             const refinedMap = {
                 1:1, 2:2, 3:3, 4:3, 5:4, 6:4, 7:5, 8:5, 9:6, 10:6, 11:6, 
                 12:7, 13:7, 14:8, 15:8, 16:9, 17:9, 18:10, 19:11, 20:12, 21:13, 22:14
             };
             return refinedMap[g] || (g > 22 ? g - 8 : g);
         }
-        return g; // Si c'est normal, on retourne le chiffre tel quel
+        return g; 
     }
     
-    // Conversion V-Scale vers score numérique Rosebloc (V0 = 2)
     if (system === "vscale") {
         let vNum = parseInt(grade.toString().replace("V", "")) || 0;
         return vNum + 2; 
     }
     
-    // Conversion Français (approximation pour le graphique)
     if (system === "french") {
-        const frenchLabels = ["4","5","6a","6a+","6b","6b+","6c","6c+","7a","7a+","7b","7b+","7c","7c+","8a","8a+","8b","8b+","9a"];
+        const frenchLabels = ["-", "4", "5", "6a", "6a+", "6b", "6b+", "6c", "6c+", "7a", "7a+", "7b", "7b+", "7c", "7c+", "8a", "8a+", "8b", "8b+", "9a", "9a+"];
         const idx = frenchLabels.indexOf(grade);
-        return idx !== -1 ? idx + 1 : 1;
+        return idx !== -1 ? idx : 1;
     }
-
     return g;
 }
 
@@ -144,13 +143,15 @@ function initCharts(data) {
     // 1. Préparation des données de progression
     const normalScores = data.map(d => {
         if (d.isComp) return null;
-        let score = convertToNumeric(d.grade, d.system || "rosebloc", false);
+        // On précise displaySys à la fin
+        let score = convertToNumeric(d.grade, d.system || "rosebloc", false, displaySys);
         return convertForDisplay(score, displaySys);
     });
 
     const compScores = data.map(d => {
         if (!d.isComp) return null;
-        let score = convertToNumeric(d.grade, d.system || "rosebloc", true);
+        // On précise displaySys à la fin
+        let score = convertToNumeric(d.grade, d.system || "rosebloc", true, displaySys);
         return convertForDisplay(score, displaySys);
     });
 
