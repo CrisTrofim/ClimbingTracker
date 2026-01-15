@@ -275,6 +275,7 @@ const processImage = (file) => {
 };
 
 document.getElementById('climbForm').onsubmit = async (e) => {
+    showToast("Grimpe enregistrée ! ✅");
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
@@ -360,3 +361,43 @@ function updateCharts(range) {
     event.target.classList.add('active');
     initCharts(filtered);
 }
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    
+    // Définit l'icône selon le type
+    const icon = type === 'success' ? '✅' : 'ℹ️';
+    
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<span>${icon} ${message}</span>`;
+    
+    container.appendChild(toast);
+
+    // Animation de sortie et suppression après 3 secondes
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}
+
+// MISE À JOUR : Modifie le bouton de confirmation de suppression pour inclure le toast
+document.getElementById('confirmDelete').onclick = () => {
+    if (climbToDelete) {
+        db.ref(`users_climbs/${currentUser.uid}/${climbToDelete}`).remove()
+            .then(() => {
+                showToast("Grimpe supprimée avec succès");
+            })
+            .catch((error) => {
+                showToast("Erreur lors de la suppression", "error");
+            });
+        
+        document.getElementById('custom-modal').style.display = 'none';
+        climbToDelete = null;
+    }
+};
+
+// Optionnel : Tu peux aussi l'ajouter dans ton formulaire après l'ajout réussi
+// Dans document.getElementById('climbForm').onsubmit :
+// showToast("Grimpe enregistrée !");
