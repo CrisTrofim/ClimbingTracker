@@ -10,12 +10,8 @@ const firebaseConfig = {
 
 const SYSTEM_CONFIG = {
     rosebloc: { 
-        max: 16, 
-        labels: Array.from({length: 16}, (_, i) => i + 1) // On génère jusqu'à 24 au cas où
-    },
-    rosebloc_compet: { 
         max: 24, 
-        labels: Array.from({length: 24}, (_, i) => i + 1) 
+        labels: Array.from({length: 24}, (_, i) => i + 1) // On génère jusqu'à 24 au cas où
     },
     vscale: { 
         max: 20, 
@@ -49,7 +45,7 @@ function convertToNumeric(grade, system, isComp = false, targetDisplaySystem = "
     let g = parseInt(grade) || 1;
 
     // Si on est en système Rosebloc, on garde le chiffre brut (pas de conversion compé)
-    if (system === "rosebloc" || system === "rosebloc_compet") {
+    if (system === "rosebloc") {
         // Exception : Si on veut afficher en V-Scale ou Français, on DOIT convertir le compé en normal d'abord
         if (isComp && (targetDisplaySystem === "vscale" || targetDisplaySystem === "french")) {
             const refinedMap = {
@@ -166,16 +162,6 @@ function initCharts(data) {
     
     let config = JSON.parse(JSON.stringify(SYSTEM_CONFIG[displaySys]));
 
-    // --- LOGIQUE DE CROISSANCE DYNAMIQUE ---
-    if (displaySys === 'rosebloc') {
-        // On cherche le score le plus haut dans les données actuelles
-        const scores = data.map(d => convertToNumeric(d.grade, d.system, d.isComp, displaySys));
-        const currentMax = scores.length > 0 ? Math.max(...scores) : 1;
-        
-        // Le tableau grandit : minimum 10, maximum 24, ou le max actuel + 1 pour respirer
-        config.max = Math.min(24, Math.max(10, currentMax + 1));
-    }
-
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
@@ -198,7 +184,7 @@ function initCharts(data) {
             scales: {
                 y: {
                     min: 0,
-                    max: config.max,
+                    max: config.max+1,
                     ticks: {
                         stepSize: 1,
                         callback: (value) => config.labels[value] || value
@@ -210,20 +196,28 @@ function initCharts(data) {
 
     // 2. Répartition (Barres)
     // On ajuste la taille du tableau de comptage au max dynamique
-    const countsNormal = Array(config.max + 1).fill(0);
-    const countsComp = Array(config.max + 1).fill(0);
-    
+    const currentLabels = config.labels.slice(0, config.max); 
+
+    const countsNormal = Array(currentLabels.length).fill(0);
+    const countsComp = Array(currentLabels.length).fill(0)
+
     data.forEach(d => {
+        // On récupère le score converti pour le système d'affichage actuel
         let score = Math.round(convertToNumeric(d.grade, d.system, d.isComp, displaySys));
-        if (score >= 0 && score <= config.max) {
-            d.isComp ? countsComp[score]++ : countsNormal[score]++;
+        
+        // IMPORTANT : On décrémente de 1 car tes labels Rosebloc commencent à 1 (index 0 du tableau)
+        let labelIndex = score - 1; 
+
+        // On n'ajoute à la répartition que si ça rentre dans la vue actuelle
+        if (labelIndex >= 0 && labelIndex < currentLabels.length) {
+            d.isComp ? countsComp[labelIndex]++ : countsNormal[labelIndex]++;
         }
     });
 
     difficultyChart = new Chart(ctxDiff, {
         type: 'bar',
         data: {
-            labels: config.labels.slice(0, config.max + 1),
+            labels: currentLabels, // Utilise les labels filtrés ici
             datasets: [
                 { label: 'Normal', data: countsNormal, backgroundColor: '#2ecc71', borderRadius: 5 },
                 { label: 'Compétition', data: countsComp, backgroundColor: '#e74c3c', borderRadius: 5 }
@@ -231,7 +225,10 @@ function initCharts(data) {
         },
         options: { 
             maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            scales: { 
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { min: 1, max: 24, ticks: { autoSkip: false } } // Assure que tous les niveaux sont visibles
+            }
         }
     });
 }
