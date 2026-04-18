@@ -57,7 +57,7 @@
                         </div>
 
                         <div class="input-group">
-                            <label>Système de cotation</label>
+                            <label>Système de notation</label>
                             <select id="gradeSystem" onchange="updateGradeInput()">
                                 <option value="rosebloc">Rose Bloc (1-16)</option>
                                 <option value="vscale">V-Scale (V0-V17)</option>
@@ -147,6 +147,25 @@
             <div class="modal-buttons">
                 <button id="cancelDelete" class="btn-secondary">Annuler</button>
                 <button id="confirmDelete" class="btn-danger">Supprimer</button>
+            </div>
+        </div>
+    </div>
+    <div id="details-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card detail-view">
+            <button class="close-details" onclick="closeDetails()">✕</button>
+            <div id="detail-photo-container"></div>
+            <div class="detail-content">
+                <div class="detail-header">
+                    <h2 id="detail-grade"></h2>
+                    <div id="detail-color-pill"></div>
+                    <span id="detail-badge" class="badge-comp" style="display:none">COMPÉ</span>
+                </div>
+                <div class="detail-meta">
+                    <p>📍 <span id="detail-location"></span></p>
+                    <p>📅 <span id="detail-date"></span></p>
+                    <p>🎯 <span id="detail-tries"></span> essais</p>
+                </div>
+                <button id="detail-delete-btn" class="btn-danger-soft">Supprimer cette grimpe</button>
             </div>
         </div>
     </div>

@@ -298,29 +298,67 @@ document.getElementById('climbForm').onsubmit = async (e) => {
     btn.disabled = false;
 };
 
+const colorMap = { "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71", "Turquoise": "#40E0D0", "Bleu": "#3498db", "Rouge": "#e74c3c", "Rose": "#ff9ff3", "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6" };
+
 function displayClimbs(data) {
     const list = document.getElementById('climbList');
     list.innerHTML = "";
-    const colorMap = { "Jaune": "#FFD700", "Orange": "#FF8C00", "Vert": "#2ecc71", "Turquoise": "#40E0D0", "Bleu": "#3498db", "Rouge": "#e74c3c", "Rose": "#ff9ff3", "Noir": "#2d3436", "Blanc": "#ffffff", "Mauve": "#9b59b6" };
-
+    
+    // On trie par date la plus récente
     [...data].reverse().forEach(climb => {
-        const div = document.createElement('div');
-        div.className = `climb-item ${climb.isComp ? 'comp-session' : ''}`;
-        div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:start;">
-                <div>
-                    <small style="color:#888">${climb.date} • ${climb.location || 'Lieu inconnu'}</small><br>
-                    <span class="color-dot" style="background:${colorMap[climb.color] || '#ccc'}"></span>
-                    <b>${climb.grade}</b> <small>(${climb.tries} essais)</small>
-                    ${climb.isComp ? '<span class="badge-comp">COMPÉ</span>' : ''}
-                </div>
-                <button onclick="deleteClimb('${climb.id}')" style="padding:5px 10px; background:#ff4757; font-size:10px; width:auto">Supprimer</button>
+        const card = document.createElement('div');
+        card.className = "mini-climb-card";
+        card.onclick = () => showFullDetails(climb);
+        
+        // Formatage de la date courte (ex: 2 Jan)
+        const d = new Date(climb.date);
+        const shortDate = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+        card.innerHTML = `
+            <div class="card-color-bar" style="background:${colorMap[climb.color] || '#ccc'}"></div>
+            <div class="card-info">
+                <strong>${climb.grade}</strong>
+                <span>${shortDate}</span>
             </div>
-            ${climb.photo ? `<img src="${climb.photo}" style="width:100%; border-radius:12px; margin-top:10px;">` : ''}
         `;
-        list.appendChild(div);
+        list.appendChild(card);
     });
 }
+
+function showFullDetails(climb) {
+    const modal = document.getElementById('details-modal');
+    
+    // Remplissage de la photo
+    const photoCont = document.getElementById('detail-photo-container');
+    photoCont.innerHTML = climb.photo 
+        ? `<img src="${climb.photo}">` 
+        : `<div style="height:120px; background:#f8f9fa; display:flex; align-items:center; justify-content:center; color:#ccc; font-size:2rem;">🧗</div>`;
+    
+    // Remplissage des textes
+    document.getElementById('detail-grade').innerText = climb.grade;
+    document.getElementById('detail-location').innerText = climb.location || "Lieu inconnu";
+    document.getElementById('detail-date').innerText = new Date(climb.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('detail-tries').innerText = climb.tries;
+    document.getElementById('detail-color-pill').style.backgroundColor = colorMap[climb.color] || '#ccc';
+    document.getElementById('detail-badge').style.display = climb.isComp ? 'inline-block' : 'none';
+
+    // Bouton supprimer (on réutilise ta logique existante)
+    document.getElementById('detail-delete-btn').onclick = () => {
+        closeDetails();
+        deleteClimb(climb.id);
+    };
+
+    modal.style.display = 'flex';
+}
+
+function closeDetails() {
+    document.getElementById('details-modal').style.display = 'none';
+}
+
+window.addEventListener('click', (e) => {
+    const detailModal = document.getElementById('details-modal');
+    if (e.target === detailModal) closeDetails();
+});
 
 let climbToDelete = null; // Variable temporaire pour stocker l'ID
 

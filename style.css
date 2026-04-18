@@ -213,3 +213,99 @@ button {
     from { transform: translateY(100px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+/* Grid de mini-cartes */
+#climbList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); /* 4-5 colonnes selon l'écran */
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.mini-climb-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid #eee;
+    transition: transform 0.1s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 8px;
+}
+
+.mini-climb-card:active { transform: scale(0.92); }
+
+.card-color-bar { height: 6px; width: 100%; margin-bottom: 6px; }
+.card-info strong { font-size: 1.1rem; display: block; color: #1a1a1a; }
+.card-info span { font-size: 0.6rem; color: #888; text-transform: uppercase; font-weight: bold; }
+
+/* Modale de détails */
+.detail-view {
+    max-width: 380px !important;
+    padding: 0 !important;
+    overflow: hidden;
+    position: relative;
+    text-align: left !important;
+}
+
+.close-details {
+    position: absolute;
+    top: 15px; 
+    right: 15px;
+    background: rgba(0, 0, 0, 0.4);
+    color: white; 
+    border: none;
+    border-radius: 50%; 
+    width: 32px; 
+    height: 32px;
+    z-index: 10; 
+    cursor: pointer; 
+    font-weight: bold;
+    display: flex;
+    align-items: center;    /* Centre verticalement */
+    justify-content: center; /* Centre horizontalement */
+    padding: 0;             /* Enlève les paddings par défaut des navigateurs */
+    line-height: 1;         /* Évite que la hauteur de ligne décale le X */
+}
+
+#detail-photo-container {
+    width: 100%;
+    background: #1a1a1a; /* Fond noir pour les bordures si l'image est étroite */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+#detail-photo-container img {
+    width: 100%;
+    max-height: 70vh; /* L'image ne dépassera jamais 70% de la hauteur de l'écran */
+    object-fit: contain; /* L'image est affichée ENTIÈREMENT */
+    display: block;
+}
+
+/* On ajuste la modale pour qu'elle puisse s'agrandir selon la photo */
+.detail-view {
+    max-width: 90vw !important; /* Plus large pour mieux voir la photo */
+    width: 450px !important;
+    max-height: 95vh;
+    overflow-y: auto; /* Permet de scroller si la photo est très longue */
+}
+
+.detail-content { padding: 20px; }
+.detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+.detail-header h2 { margin: 0; font-size: 1.8rem; }
+
+#detail-color-pill {
+    width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ddd;
+}
+
+.detail-meta p { margin: 6px 0; color: #555; font-size: 0.95rem; }
+
+.btn-danger-soft {
+    background: #fff0f0; color: #ff4757; border: 1px solid #ffcccc;
+    width: 100%; margin-top: 15px; padding: 12px; border-radius: 12px;
+    font-weight: bold; cursor: pointer;
+}
