@@ -9,10 +9,17 @@ const firebaseConfig = {
 };
 
 const SYSTEM_CONFIG = {
-    rosebloc: { max: 24, labels: Array.from({length: 16}, (_, i) => i + 1) },
+    rosebloc: { 
+        max: 16, 
+        labels: Array.from({length: 16}, (_, i) => i + 1) // On génère jusqu'à 24 au cas où
+    },
+    rosebloc_compet: { 
+        max: 24, 
+        labels: Array.from({length: 24}, (_, i) => i + 1) 
+    },
     vscale: { 
         max: 20, 
-        labels: ["-", "-", "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11", "V12", "V13", "V14", "V15", "V16", "V17", "V18"] 
+        labels: ["-", "-", "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11", "V12", "V13", "V14", "V15", "V16", "V17"] 
     },
     french: { 
         max: 20, 
@@ -42,9 +49,9 @@ function convertToNumeric(grade, system, isComp = false, targetDisplaySystem = "
     let g = parseInt(grade) || 1;
 
     // Si on est en système Rosebloc, on garde le chiffre brut (pas de conversion compé)
-    if (system === "rosebloc") {
+    if (system === "rosebloc" || system === "rosebloc_compet") {
         // Exception : Si on veut afficher en V-Scale ou Français, on DOIT convertir le compé en normal d'abord
-        if (isComp && targetDisplaySystem !== "rosebloc") {
+        if (isComp && (targetDisplaySystem === "vscale" || targetDisplaySystem === "french")) {
             const refinedMap = {
                 1:1, 2:2, 3:3, 4:3, 5:4, 6:4, 7:5, 8:5, 9:6, 10:6, 11:6, 
                 12:7, 13:7, 14:8, 15:8, 16:9, 17:9, 18:10, 19:11, 20:12, 21:13, 22:14
@@ -155,108 +162,68 @@ function updateRecords(data) {
 function initCharts(data) {
     const ctxProg = document.getElementById('progressionChart');
     const ctxDiff = document.getElementById('difficultyChart');
-    
-    // Récupérer le système choisi
     const displaySys = document.getElementById('displaySystem')?.value || 'rosebloc';
-    const config = SYSTEM_CONFIG[displaySys];
+    
+    let config = JSON.parse(JSON.stringify(SYSTEM_CONFIG[displaySys]));
+
+    // --- LOGIQUE DE CROISSANCE DYNAMIQUE ---
+    if (displaySys === 'rosebloc') {
+        // On cherche le score le plus haut dans les données actuelles
+        const scores = data.map(d => convertToNumeric(d.grade, d.system, d.isComp, displaySys));
+        const currentMax = scores.length > 0 ? Math.max(...scores) : 1;
+        
+        // Le tableau grandit : minimum 10, maximum 24, ou le max actuel + 1 pour respirer
+        config.max = Math.min(24, Math.max(10, currentMax + 1));
+    }
 
     if (progressionChart) progressionChart.destroy();
     if (difficultyChart) difficultyChart.destroy();
 
+    // 1. Progression
     const labels = data.map(d => d.date.split('-').slice(1).reverse().join('/'));
-
-    // 1. Préparation des données de progression
-    const normalScores = data.map(d => {
-        if (d.isComp) return null;
-        // On précise displaySys à la fin
-        let score = convertToNumeric(d.grade, d.system || "rosebloc", false, displaySys);
-        return convertForDisplay(score, displaySys);
-    });
-
-    const compScores = data.map(d => {
-        if (!d.isComp) return null;
-        // On précise displaySys à la fin
-        let score = convertToNumeric(d.grade, d.system || "rosebloc", true, displaySys);
-        return convertForDisplay(score, displaySys);
-    });
+    const normalScores = data.map(d => d.isComp ? null : convertToNumeric(d.grade, d.system, false, displaySys));
+    const compScores = data.map(d => !d.isComp ? null : convertToNumeric(d.grade, d.system, true, displaySys));
 
     progressionChart = new Chart(ctxProg, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
-                {
-                    label: 'Normal',
-                    data: normalScores,
-                    borderColor: '#2ecc71',
-                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    spanGaps: true
-                },
-                {
-                    label: 'Compétition (Ajusté)',
-                    data: compScores,
-                    borderColor: '#e74c3c',
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    pointStyle: 'rectRot',
-                    pointRadius: 6,
-                    tension: 0.3,
-                    fill: true,
-                    spanGaps: true
-                }
+                { label: 'Normal', data: normalScores, borderColor: '#2ecc71', tension: 0.3, spanGaps: true },
+                { label: 'Compé', data: compScores, borderColor: '#e74c3c', pointStyle: 'rectRot', pointRadius: 6, spanGaps: true }
             ]
         },
-        options: { 
-            maintainAspectRatio: false, 
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            let val = context.parsed.y;
-                            // On récupère le nom du grade selon le système choisi
-                            let gradeName = config.labels[val] || val;
-                            return `${label}: ${gradeName}`;
-                        }
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 0,
+                    max: config.max,
+                    ticks: {
+                        stepSize: 1,
+                        callback: (value) => config.labels[value] || value
                     }
                 }
-            },
-            scales: { 
-                y: { 
-                    beginAtZero: false, 
-                    min: 0, 
-                    max: config.max, // Utilise 24 pour Rosebloc, 18 pour V-Scale
-                    ticks: { 
-                        stepSize: 1,
-                        callback: function(value) {
-                            return config.labels[value] || value; // Affiche "V7" ou "7a" sur l'axe
-                        }
-                    } 
-                } 
-            } 
+            }
         }
     });
 
-    // 2. Préparation des données de répartition (Barres)
+    // 2. Répartition (Barres)
+    // On ajuste la taille du tableau de comptage au max dynamique
     const countsNormal = Array(config.max + 1).fill(0);
     const countsComp = Array(config.max + 1).fill(0);
     
     data.forEach(d => {
-        // On applique ici AUSSI la logique : pas de conversion si displaySys est rosebloc
-        let scoreRaw = convertToNumeric(d.grade, d.system || "rosebloc", d.isComp, displaySys);
-        let scoreDisplay = Math.round(convertForDisplay(scoreRaw, displaySys));
-        
-        if (scoreDisplay >= 0 && scoreDisplay <= config.max) {
-            if (d.isComp) countsComp[scoreDisplay]++;
-            else countsNormal[scoreDisplay]++;
+        let score = Math.round(convertToNumeric(d.grade, d.system, d.isComp, displaySys));
+        if (score >= 0 && score <= config.max) {
+            d.isComp ? countsComp[score]++ : countsNormal[score]++;
         }
     });
 
     difficultyChart = new Chart(ctxDiff, {
         type: 'bar',
         data: {
-            labels: config.labels,
+            labels: config.labels.slice(0, config.max + 1),
             datasets: [
                 { label: 'Normal', data: countsNormal, backgroundColor: '#2ecc71', borderRadius: 5 },
                 { label: 'Compétition', data: countsComp, backgroundColor: '#e74c3c', borderRadius: 5 }
