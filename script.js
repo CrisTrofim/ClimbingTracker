@@ -99,7 +99,7 @@ function updateGradeInput() {
     const config = SYSTEM_CONFIG[sys];
     
     // On vide les options actuelles
-    gSelect.innerHTML = '<option value="">Niv</option>';
+    gSelect.innerHTML = '<option value="">Niveau</option>';
     
     // On génère les nouvelles options à partir de SYSTEM_CONFIG
     config.labels.forEach((label) => {
