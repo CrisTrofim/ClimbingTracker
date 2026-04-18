@@ -327,15 +327,20 @@ function displayClimbs(data) {
 
 function showFullDetails(climb) {
     const modal = document.getElementById('details-modal');
-    
-    // Remplissage de la photo
     const photoCont = document.getElementById('detail-photo-container');
-    photoCont.innerHTML = climb.photo 
-        ? `<img src="${climb.photo}">` 
-        : `<div style="height:120px; background:#f8f9fa; display:flex; align-items:center; justify-content:center; color:#ccc; font-size:2rem;">🧗</div>`;
+    const colorHex = colorMap[climb.color] || '#ccc';
+
+    photoCont.innerHTML = `
+        ${climb.photo ? `<img src="${climb.photo}">` : `<div style="font-size:3rem;">🧗</div>`}
+        <div class="grade-badge-overlay">
+            <div class="badge-dot" style="background-color: ${colorHex}"></div>
+            ${climb.grade}
+        </div>
+    `;
     
     // Remplissage des textes
-    document.getElementById('detail-grade').innerText = climb.grade;
+    document.getElementById('detail-grade').innerText = "";
+    document.getElementById('detail-color-pill').style.display = "none";
     document.getElementById('detail-location').innerText = climb.location || "Lieu inconnu";
     document.getElementById('detail-date').innerText = new Date(climb.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     document.getElementById('detail-tries').innerText = climb.tries;

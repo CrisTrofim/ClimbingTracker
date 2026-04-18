@@ -294,6 +294,7 @@ button {
 }
 
 #detail-photo-container {
+    position: relative;
     width: 100%;
     background: #1a1a1a; /* Fond noir pour les bordures si l'image est étroite */
     display: flex;
@@ -301,6 +302,30 @@ button {
     justify-content: center;
     min-height: 150px;
     max-height: 50vh;
+}
+
+.grade-badge-overlay {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    background: white;
+    color: #1a1a1a;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-weight: 900;
+    font-size: 1.4rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
 }
 
 #detail-photo-container img {
@@ -318,8 +343,18 @@ button {
     overflow-y: auto; /* Permet de scroller si la photo est très longue */
 }
 
-.detail-content { padding: 20px; }
-.detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+.detail-content { 
+    margin-top: 45px;
+    padding: 20px; 
+}
+
+.detail-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    margin-bottom: 15px; 
+}
+
 .detail-header h2 { 
     margin: 0; 
     font-size: 1.8rem; 
