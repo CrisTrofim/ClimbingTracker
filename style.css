@@ -135,13 +135,14 @@ button {
 
 /* --- Custom Modal Style --- */
 .modal-overlay {
+    overflow-y: auto;
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px); /* Flou l'arrière-plan */
     display: flex; align-items: center; justify-content: center;
     z-index: 2000;
-    padding: 20px;
+    padding: 10px;
 }
 
 .modal-card {
@@ -243,23 +244,27 @@ button {
 
 /* Modale de détails */
 .detail-view {
-    max-width: 380px !important;
+    max-width: 95vw !important;
+    width: 100% !important;
+    border-radius: 20px;
     padding: 0 !important;
     overflow: hidden;
     position: relative;
     text-align: left !important;
+    display: flex;
+    flex-direction: column;
 }
 
 .close-details {
     position: absolute;
-    top: 15px; 
-    right: 15px;
-    background: rgba(0, 0, 0, 0.4);
+    top: 10px; 
+    right: 10px;
+    background: rgb(0, 0, 0, 0.6);
     color: white; 
     border: none;
     border-radius: 50%; 
-    width: 32px; 
-    height: 32px;
+    width: 36px; 
+    height: 36px;
     z-index: 10; 
     cursor: pointer; 
     font-weight: bold;
@@ -276,7 +281,8 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 200px;
+    min-height: 150px;
+    max-height: 50vh;
 }
 
 #detail-photo-container img {
@@ -296,16 +302,35 @@ button {
 
 .detail-content { padding: 20px; }
 .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
-.detail-header h2 { margin: 0; font-size: 1.8rem; }
-
-#detail-color-pill {
-    width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ddd;
+.detail-header h2 { 
+    margin: 0; 
+    font-size: 1.8rem; 
 }
 
-.detail-meta p { margin: 6px 0; color: #555; font-size: 0.95rem; }
+#detail-color-pill {
+    width: 20px; 
+    height: 20px; 
+    border-radius: 50%; 
+    border: 1px solid #ddd;
+}
+
+.detail-meta p { 
+    margin: 6px 0; 
+    color: #555; 
+    font-size: 0.95rem; 
+}
 
 .btn-danger-soft {
-    background: #fff0f0; color: #ff4757; border: 1px solid #ffcccc;
-    width: 100%; margin-top: 15px; padding: 12px; border-radius: 12px;
-    font-weight: bold; cursor: pointer;
+    background: #fff0f0; 
+    color: #ff4757; 
+    border: 1px solid #ffcccc;
+    width: 100%; 
+    margin-top: 25px; 
+    margin-bottom: 10px;
+    padding: 16px; 
+    border-radius: 12px;
+    font-weight: bold; 
+    cursor: pointer;
+    font-size: 1rem;
+    -webkit-appearance: none;
 }
