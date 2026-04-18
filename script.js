@@ -9,7 +9,7 @@ const firebaseConfig = {
 };
 
 const SYSTEM_CONFIG = {
-    rosebloc: { max: 24, labels: Array.from({length: 25}, (_, i) => i) },
+    rosebloc: { max: 24, labels: Array.from({length: 16}, (_, i) => i + 1) },
     vscale: { 
         max: 20, 
         labels: ["-", "-", "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11", "V12", "V13", "V14", "V15", "V16", "V17", "V18"] 
@@ -23,7 +23,6 @@ const SYSTEM_CONFIG = {
 function refreshAllData() {
     updateRecords(allClimbs);
     initCharts(allClimbs);
-    renderCalendar(allClimbs);
 }
 
 // Fonction utilitaire pour adapter le score numérique au système d'affichage
@@ -73,6 +72,7 @@ auth.onAuthStateChanged(user => {
         currentUser = user;
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('app-content').style.display = 'block';
+        updateGradeInput();
         if (typeof google !== 'undefined') initAutocomplete();
         fetchClimbs();
     } else {
@@ -95,9 +95,22 @@ function initAutocomplete() {
 
 function updateGradeInput() {
     const sys = document.getElementById('gradeSystem').value;
-    const gInput = document.getElementById('grade');
-    gInput.type = (sys === "rosebloc") ? "number" : "text";
-    gInput.placeholder = (sys === "rosebloc") ? "1-16" : (sys === "vscale" ? "V5" : "7a");
+    const gSelect = document.getElementById('grade');
+    const config = SYSTEM_CONFIG[sys];
+    
+    // On vide les options actuelles
+    gSelect.innerHTML = '<option value="">Niv</option>';
+    
+    // On génère les nouvelles options à partir de SYSTEM_CONFIG
+    config.labels.forEach((label) => {
+        // On évite d'ajouter les "-" qui servent de padding dans tes graphiques
+        if (label !== "-") {
+            const option = document.createElement('option');
+            option.value = label;
+            option.textContent = label;
+            gSelect.appendChild(option);
+        }
+    });
 }
 
 async function fetchClimbs() {
@@ -440,46 +453,3 @@ document.getElementById('confirmDelete').onclick = () => {
         climbToDelete = null;
     }
 };
-
-function renderCalendar(data) {
-    const calendarEl = document.getElementById('activityCalendar');
-    if (!calendarEl) return;
-    calendarEl.innerHTML = "";
-
-    // 1. Compter les grimpes par date
-    const counts = {};
-    data.forEach(d => {
-        counts[d.date] = (counts[d.date] || 0) + 1;
-    });
-
-    // 2. Préparer les dates (Dernières 53 semaines)
-    const today = new Date();
-    const startDate = new Date();
-    startDate.setDate(today.getDate() - 364); 
-    startDate.setDate(startDate.getDate() - startDate.getDay()); // Aligner sur le début de semaine
-
-    // 3. Générer les 371 cases (53 semaines * 7 jours)
-    for (let i = 0; i < 371; i++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + i);
-        
-        const dateStr = currentDate.toISOString().split('T')[0];
-        const count = counts[dateStr] || 0;
-        
-        // Déterminer le niveau d'intensité (0 à 4)
-        let level = 0;
-        if (count > 0) level = 1;
-        if (count > 2) level = 2;
-        if (count > 4) level = 3;
-        if (count > 6) level = 4;
-
-        const dayEl = document.createElement('div');
-        dayEl.className = `calendar-day level-${level}`;
-        dayEl.title = `${dateStr} : ${count} grimpe(s)`; // Tooltip au survol
-        
-        // Placement en colonne (CSS Grid auto-flow)
-        dayEl.style.gridRow = (currentDate.getDay() + 1);
-        
-        calendarEl.appendChild(dayEl);
-    }
-}
