@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -11,14 +10,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
-
 <body>
     <div id="auth-screen">
         <h1 style="font-size: 3rem;">🧗</h1>
         <h2>ClimbTracker Pro</h2>
         <p style="color: #666; margin-bottom: 20px;">Suivez votre progression à Rose Bloc et ailleurs.</p>
-        <button id="loginBtn" style="background: #4285F4; width: 100%; max-width: 300px;">Se connecter avec
-            Google</button>
+        <button id="loginBtn" style="background: #4285F4; width: 100%; max-width: 300px;">Se connecter avec Google</button>
     </div>
 
     <div id="app-content" class="container" style="display: none;">
@@ -114,12 +111,11 @@
                 <div class="card nav-card">
                     <div class="nav-header">
                         <h3 id="nav-title">Cette semaine</h3>
-                        <button id="toggleViewBtn" onclick="toggleCalendarView()" class="btn-small">📅
-                            Calendrier</button>
+                        <button id="toggleViewBtn" onclick="toggleCalendarView()" class="btn-small">📅 Calendrier</button>
                     </div>
-
+                    
                     <div id="week-carousel" class="week-display"></div>
-
+                    
                     <div id="calendar-container" style="display: none;">
                         <div class="calendar-controls">
                             <button onclick="changeMonth(-1)">◀</button>
@@ -145,8 +141,7 @@
                 <div id="stats" class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <h3 style="margin:0;">Historique</h3>
-                        <button onclick="resetFilter()" id="resetFilterBtn" class="btn-small" style="display:none;">Voir
-                            tout</button>
+                        <button onclick="resetFilter()" id="resetFilterBtn" class="btn-small" style="display:none;">Voir tout</button>
                     </div>
                     <div id="climbList">Chargement...</div>
                 </div>
@@ -167,9 +162,7 @@
     </div>
     <div id="toast-container" class="toast-container"></div>
 
-    <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDp-6Ax6rMxWVkBN3gQ0dKQXeQYTxg0ocI&libraries=places"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDp-6Ax6rMxWVkBN3gQ0dKQXeQYTxg0ocI&libraries=places"></script>
     <script src="script.js"></script>
 </body>
-
 </html>
