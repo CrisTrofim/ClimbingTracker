@@ -68,7 +68,7 @@
                         <div class="input-group">
                             <label>Niveau & Couleur</label>
                             <div style="display: flex; gap: 10px;">
-                                <input type="text" id="grade" placeholder="Niv" style="flex: 1;" required>
+                                <select id="grade" style="flex: 1;" required></select>
                                 <select id="color" style="flex: 1;">
                                     <option value="Jaune">Jaune</option>
                                     <option value="Orange">Orange</option>
@@ -85,7 +85,7 @@
                             </div>
                         </div>
 
-                        <div class="input-row" style="margin-bottom: 15px;">
+                        <div class="input-row">
                             <div class="input-group">
                                 <label>Date</label>
                                 <input type="date" id="date" required>
@@ -111,13 +111,30 @@
             </div>
 
             <div class="right-col">
+                <div class="card nav-card">
+                    <div class="nav-header">
+                        <h3 id="nav-title">Cette semaine</h3>
+                        <button id="toggleViewBtn" onclick="toggleCalendarView()" class="btn-small">📅
+                            Calendrier</button>
+                    </div>
+
+                    <div id="week-carousel" class="week-display"></div>
+
+                    <div id="calendar-container" style="display: none;">
+                        <div class="calendar-controls">
+                            <button onclick="changeMonth(-1)">◀</button>
+                            <span id="current-month-display"></span>
+                            <button onclick="changeMonth(1)">▶</button>
+                        </div>
+                        <div id="calendar-grid" class="calendar-grid"></div>
+                    </div>
+                </div>
+
                 <div class="card chart-card">
                     <h3>Progression</h3>
                     <div class="filter-buttons">
-                        <button onclick="updateCharts('1w')">1 semaine</button>
-                        <button onclick="updateCharts('1m')">1 mois</button>
-                        <button onclick="updateCharts('6m')">6 mois</button>
-                        <button onclick="updateCharts('1y')">1 an</button>
+                        <button onclick="updateCharts('1w')">1s</button>
+                        <button onclick="updateCharts('1m')">1m</button>
                         <button onclick="updateCharts('all')" class="active">Tout</button>
                     </div>
                     <div class="chart-container">
@@ -125,24 +142,22 @@
                     </div>
                 </div>
 
-                <div class="card chart-card">
-                    <h3>Répartition des niveaux</h3>
-                    <div class="chart-container">
-                        <canvas id="difficultyChart"></canvas>
-                    </div>
-                </div>
-
                 <div id="stats" class="card">
-                    <h3>Historique Personnel</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="margin:0;">Historique</h3>
+                        <button onclick="resetFilter()" id="resetFilterBtn" class="btn-small" style="display:none;">Voir
+                            tout</button>
+                    </div>
                     <div id="climbList">Chargement...</div>
                 </div>
             </div>
         </div>
     </div>
+
     <div id="custom-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <div class="modal-icon">⚠️</div>
-            <h3>Supprimer cette grimpe ?</h3>
+            <h3>Supprimer ?</h3>
             <p>Cette action est irréversible.</p>
             <div class="modal-buttons">
                 <button id="cancelDelete" class="btn-secondary">Annuler</button>

@@ -213,3 +213,77 @@ button {
     from { transform: translateY(100px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+:root {
+    --primary: #27ae60;
+    --bg: #f0f2f5;
+    --card-bg: #ffffff;
+    --text: #1a1a1a;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg);
+    margin: 0; padding: 15px;
+}
+
+.container { width: 100%; max-width: 1200px; margin: 0 auto; }
+
+/* --- Layout --- */
+.grid-layout { display: flex; flex-direction: column; gap: 15px; }
+@media (min-width: 850px) {
+    .grid-layout { display: grid; grid-template-columns: 350px 1fr; gap: 25px; align-items: start; }
+    .left-col { position: sticky; top: 20px; }
+}
+
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-select { padding: 6px; border-radius: 8px; border: 1px solid #ddd; }
+
+/* --- Cards --- */
+.card { background: var(--card-bg); padding: 18px; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+.records-dark { display: flex; justify-content: space-around; background: #1a1a1a !important; color: white; text-align: center; }
+.records-dark h2 { margin: 0; font-size: 1.5rem; }
+.records-dark p { margin: 0 0 5px 0; font-size: 0.7rem; color: #888; text-transform: uppercase; }
+.divider { width: 1px; background: #444; }
+
+/* --- Form --- */
+.input-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+.input-row { display: flex; gap: 10px; }
+label { font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #555; }
+input, select { padding: 12px; border-radius: 10px; border: 1px solid #ddd; background: #f9f9f9; font-size: 16px; }
+button { padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+/* --- Navigation & Calendar --- */
+.nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.btn-small { padding: 6px 10px; font-size: 11px; background: #eee; color: #333; border-radius: 6px; }
+
+.week-display { display: flex; justify-content: space-between; gap: 5px; }
+.day-item { 
+    flex: 1; text-align: center; padding: 10px 5px; border-radius: 12px; 
+    background: #f8f9fa; cursor: pointer; border: 1px solid transparent;
+}
+.day-item.active { background: #e8f5e9; border-color: var(--primary); }
+.day-item.has-data { position: relative; }
+.day-item.has-data::after { 
+    content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; background: var(--primary); border-radius: 50%;
+}
+.day-name { font-size: 9px; text-transform: uppercase; color: #888; display: block; }
+.day-number { font-weight: bold; font-size: 14px; }
+
+.calendar-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-day { padding: 8px 2px; border-radius: 6px; background: #f9f9f9; font-size: 11px; border: 1px solid #eee; text-align: center; cursor: pointer; }
+.cal-day.has-climb { background: #1a1a1a; color: white; border-color: #333; }
+
+/* --- Misc --- */
+.climb-item { border-bottom: 1px solid #eee; padding: 12px 0; }
+.color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #ddd; }
+.chart-container { height: 200px; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-card { background: white; padding: 25px; border-radius: 20px; text-align: center; max-width: 300px; width: 90%; }
+.toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 200; }
+.toast { background: #333; color: white; padding: 10px 20px; border-radius: 30px; margin-top: 5px; font-size: 13px; }
