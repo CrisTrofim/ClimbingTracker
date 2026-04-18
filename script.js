@@ -23,6 +23,7 @@ const SYSTEM_CONFIG = {
 function refreshAllData() {
     updateRecords(allClimbs);
     initCharts(allClimbs);
+    renderCalendar(allClimbs);
 }
 
 // Fonction utilitaire pour adapter le score numérique au système d'affichage
@@ -67,7 +68,6 @@ function convertToNumeric(grade, system, isComp = false, targetDisplaySystem = "
     return g;
 }
 
-// --- AUTH ---
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
@@ -398,6 +398,45 @@ document.getElementById('confirmDelete').onclick = () => {
     }
 };
 
-// Optionnel : Tu peux aussi l'ajouter dans ton formulaire après l'ajout réussi
-// Dans document.getElementById('climbForm').onsubmit :
-// showToast("Grimpe enregistrée !");
+function renderCalendar(data) {
+    const calendarEl = document.getElementById('activityCalendar');
+    if (!calendarEl) return;
+    calendarEl.innerHTML = "";
+
+    // 1. Compter les grimpes par date
+    const counts = {};
+    data.forEach(d => {
+        counts[d.date] = (counts[d.date] || 0) + 1;
+    });
+
+    // 2. Préparer les dates (Dernières 53 semaines)
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 364); 
+    startDate.setDate(startDate.getDate() - startDate.getDay()); // Aligner sur le début de semaine
+
+    // 3. Générer les 371 cases (53 semaines * 7 jours)
+    for (let i = 0; i < 371; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const count = counts[dateStr] || 0;
+        
+        // Déterminer le niveau d'intensité (0 à 4)
+        let level = 0;
+        if (count > 0) level = 1;
+        if (count > 2) level = 2;
+        if (count > 4) level = 3;
+        if (count > 6) level = 4;
+
+        const dayEl = document.createElement('div');
+        dayEl.className = `calendar-day level-${level}`;
+        dayEl.title = `${dateStr} : ${count} grimpe(s)`; // Tooltip au survol
+        
+        // Placement en colonne (CSS Grid auto-flow)
+        dayEl.style.gridRow = (currentDate.getDay() + 1);
+        
+        calendarEl.appendChild(dayEl);
+    }
+}
