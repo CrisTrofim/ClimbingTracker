@@ -307,15 +307,15 @@ function displayClimbs(data) {
     // On trie par date la plus récente
     [...data].reverse().forEach(climb => {
         const card = document.createElement('div');
-        card.className = "mini-climb-card";
+        card.className = `mini-climb-card ${climb.isComp ? 'is-comp-card' : ''}`;
         card.onclick = () => showFullDetails(climb);
         
-        // Formatage de la date courte (ex: 2 Jan)
         const d = new Date(climb.date);
         const shortDate = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
         card.innerHTML = `
             <div class="card-color-bar" style="background:${colorMap[climb.color] || '#ccc'}"></div>
+            ${climb.isComp ? '<div class="mini-comp-badge">🏆</div>' : ''}
             <div class="card-info">
                 <strong>${climb.grade}</strong>
                 <span>${shortDate}</span>
