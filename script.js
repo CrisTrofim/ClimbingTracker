@@ -40,6 +40,11 @@ const db = firebase.database();
 let currentUser = null;
 let allClimbs = [];
 let progressionChart, difficultyChart;
+let difficultyFilter = 'normal'; // 'normal' ou 'comp'
+let historyType = 'all'; // 'all', 'normal', 'comp' - filtre de type pour l'historique
+let climbGradeFilter = 'all'; // Filtre de grade pour l'historique
+let climbGrades = []; // Liste des grades disponibles
+let currentGradeIndex = -1; // Index du grade actuellement affiché
 
 function convertToNumeric(grade, system, isComp = false, targetDisplaySystem = "rosebloc") {
     let g = parseInt(grade) || 1;
@@ -195,8 +200,18 @@ function initCharts(data) {
     });
 
     // 2. Répartition (Barres)
-    // On ajuste la taille du tableau de comptage au max dynamique
-    const currentLabels = config.labels.slice(0, config.max); 
+    // Calculer le max réel selon le filtre
+    let maxScore = 0;
+    data.forEach(d => {
+        if ((difficultyFilter === 'normal' && !d.isComp) || (difficultyFilter === 'comp' && d.isComp)) {
+            let score = Math.round(convertToNumeric(d.grade, d.system, d.isComp, displaySys));
+            maxScore = Math.max(maxScore, score);
+        }
+    });
+
+    // Ajouter une marge (2 niveaux de plus)
+    const dynamicMax = Math.min(maxScore + 2, config.max);
+    const currentLabels = config.labels.slice(0, dynamicMax); 
 
     const countsNormal = Array(currentLabels.length).fill(0);
     const countsComp = Array(currentLabels.length).fill(0)
@@ -219,15 +234,15 @@ function initCharts(data) {
         data: {
             labels: currentLabels, // Utilise les labels filtrés ici
             datasets: [
-                { label: 'Normal', data: countsNormal, backgroundColor: '#2ecc71', borderRadius: 5 },
-                { label: 'Compétition', data: countsComp, backgroundColor: '#e74c3c', borderRadius: 5 }
+                ...(difficultyFilter === 'normal' ? [{ label: 'Normal', data: countsNormal, backgroundColor: '#2ecc71', borderRadius: 5 }] : []),
+                ...(difficultyFilter === 'comp' ? [{ label: 'Compétition', data: countsComp, backgroundColor: '#e74c3c', borderRadius: 5 }] : [])
             ]
         },
         options: { 
             maintainAspectRatio: false,
             scales: { 
                 y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                x: { min: 1, max: 24, ticks: { autoSkip: false } } // Assure que tous les niveaux sont visibles
+                x: { ticks: { autoSkip: false } } // Affiche tous les labels
             }
         }
     });
@@ -281,8 +296,37 @@ function displayClimbs(data) {
     const list = document.getElementById('climbList');
     list.innerHTML = "";
     
+    const displaySys = document.getElementById('displaySystem')?.value || 'rosebloc';
+    const config = SYSTEM_CONFIG[displaySys];
+    
+    // Filtrer d'abord par type (Normal/Compétition)
+    let typeFilteredData = data;
+    if (historyType === 'normal') {
+        typeFilteredData = data.filter(d => !d.isComp);
+    } else if (historyType === 'comp') {
+        typeFilteredData = data.filter(d => d.isComp);
+    }
+    
+    // Extraire tous les grades uniques et les trier
+    const uniqueGrades = [...new Set(typeFilteredData.map(d => d.grade))];
+    const gradesNumeric = uniqueGrades.map(g => ({
+        grade: g,
+        numeric: convertToNumeric(g, typeFilteredData.find(d => d.grade === g).system, typeFilteredData.find(d => d.grade === g).isComp, displaySys)
+    })).sort((a, b) => a.numeric - b.numeric);
+    
+    climbGrades = gradesNumeric.map(g => g.grade);
+    
+    // Générer les boutons de filtres
+    updateDifficultyFilters();
+    
+    // Filtrer les données par grade
+    let filteredData = typeFilteredData;
+    if (climbGradeFilter !== 'all') {
+        filteredData = typeFilteredData.filter(d => d.grade === climbGradeFilter);
+    }
+    
     // On trie par date la plus récente
-    [...data].reverse().forEach(climb => {
+    [...filteredData].reverse().forEach(climb => {
         const card = document.createElement('div');
         card.className = `mini-climb-card ${climb.isComp ? 'is-comp-card' : ''}`;
         card.onclick = () => showFullDetails(climb);
@@ -300,6 +344,83 @@ function displayClimbs(data) {
         `;
         list.appendChild(card);
     });
+}
+
+function setHistoryType(type) {
+    historyType = type;
+    climbGradeFilter = 'all'; // Réinitialiser le filtre de grade
+    currentGradeIndex = -1;
+    
+    // Mettre à jour le style des boutons
+    document.querySelectorAll('.type-toggle-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.type === type) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Rafraîchir l'affichage
+    displayClimbs(allClimbs);
+}
+
+function updateDifficultyFilters() {
+    const filtersContainer = document.getElementById('difficultyFilters');
+    filtersContainer.innerHTML = '';
+    
+    // Bouton "Tous les niveaux"
+    const allBtn = document.createElement('button');
+    allBtn.className = `filter-grade-btn ${climbGradeFilter === 'all' ? 'active' : ''}`;
+    allBtn.textContent = 'Tous les niveaux';
+    allBtn.onclick = () => filterClimbsByGrade('all');
+    filtersContainer.appendChild(allBtn);
+    
+    // Boutons pour chaque grade
+    climbGrades.forEach(grade => {
+        const btn = document.createElement('button');
+        btn.className = `filter-grade-btn ${climbGradeFilter === grade ? 'active' : ''}`;
+        btn.textContent = grade;
+        btn.onclick = () => filterClimbsByGrade(grade);
+        filtersContainer.appendChild(btn);
+    });
+}
+
+function filterClimbsByGrade(grade) {
+    climbGradeFilter = grade;
+    currentGradeIndex = grade === 'all' ? -1 : climbGrades.indexOf(grade);
+    
+    // Mettre à jour l'affichage
+    updateDifficultyFilters();
+    updateGradeNavigator();
+    displayClimbs(allClimbs);
+}
+
+function updateGradeNavigator() {
+    const navigator = document.getElementById('gradeNavigator');
+    const prevBtn = document.getElementById('prevGradeBtn');
+    const nextBtn = document.getElementById('nextGradeBtn');
+    const display = document.getElementById('currentGradeDisplay');
+    
+    if (climbGradeFilter === 'all') {
+        navigator.style.display = 'none';
+    } else {
+        navigator.style.display = 'flex';
+        display.textContent = `${climbGrades[currentGradeIndex]}`;
+        
+        prevBtn.style.display = currentGradeIndex > 0 ? 'block' : 'none';
+        nextBtn.style.display = currentGradeIndex < climbGrades.length - 1 ? 'block' : 'none';
+    }
+}
+
+function navigatePrevGrade() {
+    if (currentGradeIndex > 0) {
+        filterClimbsByGrade(climbGrades[currentGradeIndex - 1]);
+    }
+}
+
+function navigateNextGrade() {
+    if (currentGradeIndex < climbGrades.length - 1) {
+        filterClimbsByGrade(climbGrades[currentGradeIndex + 1]);
+    }
 }
 
 function showFullDetails(climb) {
@@ -380,6 +501,21 @@ function updateCharts(range) {
     document.querySelectorAll('.filter-buttons button').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
     initCharts(filtered);
+}
+
+function setDifficultyFilter(filter) {
+    difficultyFilter = filter;
+    
+    // Mise à jour du style des boutons
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === filter) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Recréer le graphique de répartition
+    initCharts(allClimbs);
 }
 
 function showToast(message, type = 'success') {

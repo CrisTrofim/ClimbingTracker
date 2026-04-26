@@ -129,6 +129,140 @@ button {
 }
 .filter-buttons button.active { background: var(--primary); color: white; }
 
+/* Toggle buttons for difficulty filter */
+.filter-toggle-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    justify-content: center;
+}
+
+.toggle-btn {
+    padding: 10px 20px;
+    border: 2px solid #ddd;
+    border-radius: 25px;
+    background: white;
+    color: #444;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.toggle-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+/* Filtres de difficulté */
+.type-toggle-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    justify-content: center;
+}
+
+.type-toggle-btn {
+    padding: 8px 16px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    color: #444;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 80px;
+}
+
+.type-toggle-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.type-toggle-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.25);
+}
+
+/* Filtres de difficulté */
+.difficulty-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.filter-grade-btn {
+    padding: 8px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    color: #444;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-grade-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.filter-grade-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Navigateur de grades */
+.grade-navigator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 10px;
+}
+
+#currentGradeDisplay {
+    font-weight: bold;
+    font-size: 16px;
+    color: var(--primary);
+    min-width: 60px;
+    text-align: center;
+}
+
+#prevGradeBtn, #nextGradeBtn {
+    padding: 8px 12px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+#prevGradeBtn:hover, #nextGradeBtn:hover {
+    background: #219150;
+    transform: translateY(-1px);
+}
+
 .climb-item { border-bottom: 1px solid #eee; padding: 15px 0; }
 .badge-comp { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
 .color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; border: 1px solid #ccc; vertical-align: middle; }
@@ -213,6 +347,100 @@ button {
 @keyframes toastIn {
     from { transform: translateY(100px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+}
+
+/* ===== RESPONSIVE DESIGN POUR MOBILE ===== */
+@media (max-width: 640px) {
+    /* Padding réduit pour petit écran */
+    body { padding: 10px; }
+    header { margin-bottom: 15px; gap: 5px; }
+    header h1 { font-size: 1.1rem; }
+    
+    /* Type toggle buttons compacts */
+    .type-toggle-buttons {
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+    
+    .type-toggle-btn {
+        padding: 7px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        min-width: 60px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Toggle buttons du graphique compacts */
+    .filter-toggle-buttons {
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .toggle-btn {
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Filtres de grade plus compacts */
+    .difficulty-filters {
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+    
+    .filter-grade-btn {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Navigateur de grades compact */
+    .grade-navigator {
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 12px;
+    }
+    
+    #currentGradeDisplay {
+        font-size: 14px;
+        min-width: 50px;
+    }
+    
+    #prevGradeBtn, #nextGradeBtn {
+        padding: 8px 12px;
+        font-size: 11px;
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Charts responsive */
+    .chart-container { height: 200px; }
+    .filter-buttons { gap: 4px; margin-bottom: 12px; }
+    .filter-buttons button { 
+        padding: 8px 6px; 
+        font-size: 9px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Cartes mini compactes */
+    .mini-climb-card { padding: 10px; margin-bottom: 8px; }
 }
 
 /* Grid de mini-cartes */

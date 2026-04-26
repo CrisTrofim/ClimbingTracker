@@ -129,6 +129,10 @@
 
                 <div class="card chart-card">
                     <h3>Répartition des niveaux</h3>
+                    <div class="filter-toggle-buttons">
+                        <button class="toggle-btn active" data-filter="normal" onclick="setDifficultyFilter('normal')">Normal</button>
+                        <button class="toggle-btn" data-filter="comp" onclick="setDifficultyFilter('comp')">Compétition</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="difficultyChart"></canvas>
                     </div>
@@ -136,6 +140,19 @@
 
                 <div id="stats" class="card">
                     <h3>Historique Personnel</h3>
+                    <div class="type-toggle-buttons">
+                        <button class="type-toggle-btn active" data-type="all" onclick="setHistoryType('all')">Les deux</button>
+                        <button class="type-toggle-btn" data-type="normal" onclick="setHistoryType('normal')">Normal</button>
+                        <button class="type-toggle-btn" data-type="comp" onclick="setHistoryType('comp')">Compétition 🏆</button>
+                    </div>
+                    <div id="difficultyFilters" class="difficulty-filters">
+                        <button class="filter-grade-btn active" data-grade="all" onclick="filterClimbsByGrade('all')">Tous les niveaux</button>
+                    </div>
+                    <div id="gradeNavigator" class="grade-navigator">
+                        <button id="prevGradeBtn" onclick="navigatePrevGrade()" style="display: none;">◀ Précédent</button>
+                        <span id="currentGradeDisplay" style="display: none;"></span>
+                        <button id="nextGradeBtn" onclick="navigateNextGrade()" style="display: none;">Suivant ▶</button>
+                    </div>
                     <div id="climbList">Chargement...</div>
                 </div>
             </div>
