@@ -386,11 +386,10 @@ function updateDifficultyFilters() {
 
 function filterClimbsByGrade(grade) {
     climbGradeFilter = grade;
-    currentGradeIndex = grade === 'all' ? -1 : climbGrades.indexOf(grade);
     
     // Mettre à jour l'affichage
     updateDifficultyFilters();
-    updateGradeNavigator();
+    // updateGradeNavigator();
     displayClimbs(allClimbs);
 }
 
@@ -398,12 +397,14 @@ function updateGradeNavigator() {
     const navigator = document.getElementById('gradeNavigator');
     const display = document.getElementById('currentGradeDisplay');
     
+    if (!navigator || !display) return;
+
     if (climbGradeFilter === 'all') {
         navigator.style.display = 'none';
     } else {
         navigator.style.display = 'flex';
-        display.style.display = 'block';
-        display.textContent = `Niveau: ${climbGrades[currentGradeIndex]}`;
+        // On affiche directement la valeur du filtre
+        display.textContent = `Niveau : ${climbGradeFilter}`;
     }
 }
 

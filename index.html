@@ -144,6 +144,9 @@
                         <button class="type-toggle-btn active" data-type="all" onclick="setHistoryType('all')">Les deux</button>
                         <button class="type-toggle-btn" data-type="normal" onclick="setHistoryType('normal')">Normal</button>
                         <button class="type-toggle-btn" data-type="comp" onclick="setHistoryType('comp')">Compétition 🏆</button>
+                        <div id="gradeNavigator" style="display: none; justify-content: center; margin: 10px 0;">
+                            <span id="currentGradeDisplay" style="font-weight: bold; color: #27ae60;"></span>
+                        </div>
                     </div>
                     <div id="difficultyFilters" class="difficulty-filters">
                         <button class="filter-grade-btn active" data-grade="all" onclick="filterClimbsByGrade('all')">Tous les niveaux</button>

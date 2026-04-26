@@ -611,3 +611,7 @@ button {
     font-size: 1rem;
     -webkit-appearance: none;
 }
+
+.gradeNavigator {
+    display: none;
+}
