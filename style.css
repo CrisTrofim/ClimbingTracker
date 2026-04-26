@@ -231,9 +231,8 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px;
     margin-bottom: 15px;
-    padding: 12px;
+    padding: 10px;
     background: #f5f5f5;
     border-radius: 10px;
 }
@@ -242,25 +241,6 @@ button {
     font-weight: bold;
     font-size: 16px;
     color: var(--primary);
-    min-width: 60px;
-    text-align: center;
-}
-
-#prevGradeBtn, #nextGradeBtn {
-    padding: 8px 12px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-
-#prevGradeBtn:hover, #nextGradeBtn:hover {
-    background: #219150;
-    transform: translateY(-1px);
 }
 
 .climb-item { border-bottom: 1px solid #eee; padding: 15px 0; }
@@ -407,24 +387,13 @@ button {
     
     /* Navigateur de grades compact */
     .grade-navigator {
-        gap: 10px;
-        padding: 10px;
+        gap: 0;
+        padding: 8px;
         margin-bottom: 12px;
     }
     
     #currentGradeDisplay {
-        font-size: 14px;
-        min-width: 50px;
-    }
-    
-    #prevGradeBtn, #nextGradeBtn {
-        padding: 8px 12px;
-        font-size: 11px;
-        min-height: 44px;
-        min-width: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        font-size: 13px;
     }
     
     /* Charts responsive */
@@ -441,6 +410,27 @@ button {
     
     /* Cartes mini compactes */
     .mini-climb-card { padding: 10px; margin-bottom: 8px; }
+}
+
+/* Mobile - Optimisation de la modale des photos */
+@media (max-width: 640px) {
+    .detail-view {
+        max-width: 95vw !important;
+        width: 100% !important;
+        max-height: 90vh;
+    }
+    
+    #detail-photo-container {
+        max-height: 35vh;
+    }
+    
+    #detail-photo-container img {
+        max-height: 35vh;
+    }
+    
+    .detail-content {
+        padding: 16px;
+    }
 }
 
 /* Grid de mini-cartes */
@@ -529,7 +519,8 @@ button {
     align-items: center;
     justify-content: center;
     min-height: 150px;
-    max-height: 50vh;
+    max-height: 40vh;
+    overflow: hidden;
 }
 
 .grade-badge-overlay {
@@ -547,6 +538,7 @@ button {
     display: flex;
     align-items: center;
     gap: 8px;
+    backdrop-filter: blur(4px);
 }
 
 .badge-dot {
@@ -558,8 +550,9 @@ button {
 
 #detail-photo-container img {
     width: 100%;
-    max-height: 70vh; /* L'image ne dépassera jamais 70% de la hauteur de l'écran */
-    object-fit: contain; /* L'image est affichée ENTIÈREMENT */
+    height: 100%;
+    max-height: 40vh;
+    object-fit: contain; /* L'image est affichée ENTIÈREMENT sans distorsion */
     display: block;
 }
 
@@ -567,13 +560,16 @@ button {
 .detail-view {
     max-width: 90vw !important; /* Plus large pour mieux voir la photo */
     width: 450px !important;
-    max-height: 95vh;
-    overflow-y: auto; /* Permet de scroller si la photo est très longue */
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Empêche le débordement global */
 }
 
 .detail-content { 
-    margin-top: 45px;
-    padding: 20px; 
+    padding: 20px;
+    overflow-y: auto; /* Le contenu scroll indépendamment si besoin */
+    flex: 1;
 }
 
 .detail-header { 

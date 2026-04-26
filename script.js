@@ -396,30 +396,14 @@ function filterClimbsByGrade(grade) {
 
 function updateGradeNavigator() {
     const navigator = document.getElementById('gradeNavigator');
-    const prevBtn = document.getElementById('prevGradeBtn');
-    const nextBtn = document.getElementById('nextGradeBtn');
     const display = document.getElementById('currentGradeDisplay');
     
     if (climbGradeFilter === 'all') {
         navigator.style.display = 'none';
     } else {
         navigator.style.display = 'flex';
-        display.textContent = `${climbGrades[currentGradeIndex]}`;
-        
-        prevBtn.style.display = currentGradeIndex > 0 ? 'block' : 'none';
-        nextBtn.style.display = currentGradeIndex < climbGrades.length - 1 ? 'block' : 'none';
-    }
-}
-
-function navigatePrevGrade() {
-    if (currentGradeIndex > 0) {
-        filterClimbsByGrade(climbGrades[currentGradeIndex - 1]);
-    }
-}
-
-function navigateNextGrade() {
-    if (currentGradeIndex < climbGrades.length - 1) {
-        filterClimbsByGrade(climbGrades[currentGradeIndex + 1]);
+        display.style.display = 'block';
+        display.textContent = `Niveau: ${climbGrades[currentGradeIndex]}`;
     }
 }
 
